@@ -1,9 +1,25 @@
 
+
 # Raspberry Pi Pico Shot Counter & Battery Monitor
+
+**Objective:**  
+Reimplement the Airsoft Computer in C++ for the Raspberry Pi Pico to maximize performance, sampling reliability, and display clarity. The project uses an SH1107 SPI OLED display (128x128, monochrome) and a custom 16×16 font, with robust shot detection and battery monitoring for Airsoft applications.
+
+
+## Features
+
+- **High-Frequency Battery Voltage Monitoring:** ADC sampling at ≥1kHz for real-time battery voltage tracking.
+- **Shot Detection:** Detects shots by monitoring voltage dips, using moving averages to smooth noise; supports accurate counting during rapid fire; configurable detection threshold.
+- **Display Output:** SH1107 SPI OLED (128x128, monochrome); displays current voltage and shot count using a custom 16×16 font; responsive updates with minimal flicker; optional voltage trend graph.
+- **User Interface:** Single button for shot counter reset (long press); designed for future mode-switching; debounced input handling.
+- **Serial Debug/Logging:** Serial output for voltage, shot data, and debug information to aid development and troubleshooting.
+- **Configuration:** Compile-time or runtime (serial) adjustment for how large of a dip from the current baseline is required to detect a shot, as well as display options.
+
 
 ## Project Overview
 
 This project implements a shot counter and battery monitor for an Airsoft gun using a Raspberry Pi Pico. The core functionality relies on high-precision, high-frequency voltage sampling to detect a voltage dip, which signifies a shot being fired. This plan outlines a robust software architecture using the Pico's dual cores, DMA, and hardware timers to achieve precise and reliable performance.
+
 
 ## Hardware Components
 
@@ -17,8 +33,40 @@ This project implements a shot counter and battery monitor for an Airsoft gun us
   - **Specifications:** Fixed 5V output, max 1.5A, input 7V–35V.
   - **Input Voltage:** Powered by two cells of the 11.1V battery via the balance port connector (nominal 7.4V).
   - *Note: Due to the voltage drop (e.g., from 7.4V to 5V), the regulator will dissipate a small amount of heat. A heatsink is still recommended to ensure stable operation and prevent thermal shutdown, especially under load.*
+
 - **Voltage Divider:** Two series resistors to scale battery voltage down to Pico's ADC range (max 3.3V).
-- **Wiring:** Standard breadboard/PCB, jumper wires, etc.
+- **Inputs:**
+  - **Button:** Single physical button connected to a Pico GPIO pin, used for shot counter reset (long press) and potential mode switching in future revisions.
+- **Wiring:** Standard breadboard/PCB, jumper wires, etc. See the detailed Wiring Guide section below for pin assignments and connection details.
+## Wiring Guide
+
+### Pin Configuration Summary
+
+| Component         | Signal           | Pico Pin | GPIO | Notes                  |
+|-------------------|------------------|----------|------|------------------------|
+| **SH1107 Display**| SCL (Clock)      | Pin 19   | GP14 | SPI Clock              |
+|                   | SDA (Data)       | Pin 20   | GP15 | SPI MOSI               |
+|                   | DC (Data/Command)| Pin 27   | GP21 | Command/Data select    |
+|                   | CS (Chip Select) | Pin 17   | GP13 | SPI Chip Select        |
+|                   | RST (Reset)      | Pin 26   | GP20 | Display Reset          |
+|                   | VCC              | 3V3      |  -   | 3.3V Power             |
+|                   | GND              | GND      |  -   | Ground                 |
+| **Button**        | Terminal 1       | Pin 12   | GP9  | Output (drives low)    |
+|                   | Terminal 2       | Pin 14   | GP10 | Input (pull-up)        |
+| **Battery Monitor**| ADC Input        | Pin 31   | GP26 | ADC0                   |
+| **Status LED**    | Onboard LED      | Pin 30   | GP25 | Built-in LED           |
+
+#### Wiring Notes
+- Refer to the table above for all pin assignments.
+- Ensure the SH1107 display is set to SPI mode and powered by 3.3V.
+- Button: GP9 (output, drives LOW), GP10 (input, pull-up enabled); button press connects GP9 and GP10, causing GP10 to read LOW.
+- Battery voltage divider: Use equal-value resistors (e.g., 10kΩ) for 2:1 division; max input 6.6V battery (3.3V at ADC).
+- Status LED: Onboard, no external wiring required.
+
+#### Power Supply
+- Pico powered by USB 5V or VSYS pin.
+- Display powered by 3.3V from Pico.
+- Typical current draw: ~50mA (Pico + Display).
 
 ## Hardware Schematic
 
@@ -59,6 +107,7 @@ The 128×128 pixel OLED display will be used to show key information in a clear,
 - **Shot Count:** Large, prominent display of the current shot count using the custom 16×16 pixel font, centered on the screen.
 - **Battery Voltage:** Current battery voltage at the bottom of the screen, possibly with a small battery icon.
 - **Trend Graph (Optional):** Small graph showing the recent voltage trend to help visualize shot detection.
+
 
 ## Implementation Steps
 
@@ -138,18 +187,51 @@ This is a step-by-step plan for building the code.
     - A short press will have no effect.
     - A long press (3 seconds) will reset the shot counter to zero. This will require a timer or a counter to track the duration of the button press.
 
+
 ### Step 6: Implement Custom Font and Graphics
 
-This step involves developing or sourcing a custom 16×16 pixel font (monochrome bitmap) and implementing the necessary rendering routines to draw characters and strings to the display using the U8g2 library.
+This step involves developing or sourcing a custom 16×16 pixel font (monochrome bitmap), stored as C arrays (16 rows × 16 bits per glyph). Implement the necessary rendering routines to draw characters and strings to the display using the U8g2 library.
 
-### Step 7: Final Touches
+**Rendering API:**
+- `draw_char(x, y, char)`
+- `draw_string(x, y, str)`
+
+**Graphics Primitives:**
+- `draw_pixel(x, y)`
+- `draw_line(x0, y0, x1, y1)`
+- `draw_rect(x, y, w, h, filled)`
+- (Optional) `draw_circle(x, y, r, filled)`
+
+### Step 7: Add Serial Debug/Logging
+
+- Implement serial output for voltage, shot data, and debug information to aid development and troubleshooting.
+
+### Step 8: Add Configuration Handling
+
+- Implement compile-time or runtime (serial) adjustment for how large of a dip from the current baseline is required to detect a shot, as well as display options.
+
+### Step 9: Final Touches
 
 - **Voltage Divider Calculation:** Determine the correct resistor values for the voltage divider based on your battery's maximum voltage and the Pico's ADC range.
 - **Calibration:** Write a function to calibrate the ADC, mapping the raw digital values to a millivolt reading.
 - **Tuning:** Adjust the moving average window size and the shot detection threshold to match the characteristics of your Airsoft gun's motor and battery.
 - **Watchdog:** Implement the watchdog timer initialization and "kick" functions to ensure system stability.
 
+
 ## Required Libraries
 
 - **pico-sdk** (for all hardware peripherals)
 - **U8g2 library** (for the SH1107 display driver and graphics)
+
+## Development Steps Checklist
+
+- [ ] Project setup and boilerplate
+- [ ] Display and UI logic (Core 1)
+- [ ] ADC, DMA, and timer configuration (Core 0)
+- [ ] Data processing and shot detection logic (Core 0)
+- [ ] User interface logic (button handling)
+- [ ] Custom font and graphics implementation
+- [ ] Serial debug/logging
+- [ ] Configuration handling (threshold, display options)
+- [ ] Calibration and tuning
+- [ ] Watchdog timer implementation
