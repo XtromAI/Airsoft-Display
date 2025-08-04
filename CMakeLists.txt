@@ -36,38 +36,38 @@ pico_sdk_init()
 # Add executable. Default name is the project name, version 0.1
 
 add_executable(airsoft-display main.cpp)
-add_executable(pico_examples pico_examples.cpp)
+    # add_executable(pico_examples pico_examples.cpp)
 
 pico_set_program_name(airsoft-display "airsoft-display")
-pico_set_program_name(pico_examples "pico_examples")
+    # pico_set_program_name(pico_examples "pico_examples")
 pico_set_program_version(airsoft-display "0.1")
-pico_set_program_version(pico_examples "0.1")
+    # pico_set_program_version(pico_examples "0.1")
 
 # Generate PIO header
 pico_generate_pio_header(airsoft-display ${CMAKE_CURRENT_LIST_DIR}/blink.pio)
-pico_generate_pio_header(pico_examples ${CMAKE_CURRENT_LIST_DIR}/blink.pio)
+    # pico_generate_pio_header(pico_examples ${CMAKE_CURRENT_LIST_DIR}/blink.pio)
 
 # Modify the below lines to enable/disable output over UART/USB
 pico_enable_stdio_uart(airsoft-display 0)
 pico_enable_stdio_usb(airsoft-display 0)
-pico_enable_stdio_uart(pico_examples 0)
-pico_enable_stdio_usb(pico_examples 0)
+    # pico_enable_stdio_uart(pico_examples 0)
+    # pico_enable_stdio_usb(pico_examples 0)
 
 # Add the standard library to the build
 target_link_libraries(airsoft-display
         pico_stdlib)
-target_link_libraries(pico_examples
-        pico_stdlib)
+    # target_link_libraries(pico_examples
+    #         pico_stdlib)
 
 # Add the standard include files to the build
 target_include_directories(airsoft-display PRIVATE
         ${CMAKE_CURRENT_LIST_DIR}
         ${CMAKE_CURRENT_BINARY_DIR}
 )
-target_include_directories(pico_examples PRIVATE
-        ${CMAKE_CURRENT_LIST_DIR}
-        ${CMAKE_CURRENT_BINARY_DIR}
-)
+    # target_include_directories(pico_examples PRIVATE
+    #         ${CMAKE_CURRENT_LIST_DIR}
+    #         ${CMAKE_CURRENT_BINARY_DIR}
+    # )
 
 # Add any user requested libraries
 target_link_libraries(airsoft-display 
@@ -79,16 +79,16 @@ target_link_libraries(airsoft-display
         hardware_watchdog
         hardware_clocks
         )
-target_link_libraries(pico_examples 
-        hardware_spi
-        hardware_dma
-        hardware_pio
-        hardware_interp
-        hardware_timer
-        hardware_watchdog
-        hardware_clocks
-        )
+    # target_link_libraries(pico_examples 
+    #         hardware_spi
+    #         hardware_dma
+    #         hardware_pio
+    #         hardware_interp
+    #         hardware_timer
+    #         hardware_watchdog
+    #         hardware_clocks
+    #         )
 
 pico_add_extra_outputs(airsoft-display)
-pico_add_extra_outputs(pico_examples)
+    # pico_add_extra_outputs(pico_examples)
 
