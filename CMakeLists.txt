@@ -35,7 +35,7 @@ pico_sdk_init()
 
 # Add executable. Default name is the project name, version 0.1
 
-add_executable(airsoft-display main.cpp)
+add_executable(airsoft-display src/main.cpp)
     # add_executable(pico_examples pico_examples.cpp)
 
 pico_set_program_name(airsoft-display "airsoft-display")
