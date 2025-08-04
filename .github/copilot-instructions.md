@@ -1,1 +1,1 @@
-always consult design-guide.md in the project root.
+always consult /docs/design-guide.md in the project root.
