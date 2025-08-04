@@ -33,9 +33,10 @@ project(airsoft-display C CXX ASM)
 # Initialise the Raspberry Pi Pico SDK
 pico_sdk_init()
 
-# Add executable. Default name is the project name, version 0.1
 
-add_executable(airsoft-display src/main.cpp)
+# Add u8g2 source files (only csrc for C usage)
+file(GLOB U8G2_SRC "lib/u8g2/csrc/*.c")
+add_executable(airsoft-display src/main.cpp ${U8G2_SRC})
     # add_executable(pico_examples pico_examples.cpp)
 
 pico_set_program_name(airsoft-display "airsoft-display")
@@ -59,10 +60,11 @@ target_link_libraries(airsoft-display
     # target_link_libraries(pico_examples
     #         pico_stdlib)
 
-# Add the standard include files to the build
+        # Add the standard include files to the build
 target_include_directories(airsoft-display PRIVATE
         ${CMAKE_CURRENT_LIST_DIR}
         ${CMAKE_CURRENT_BINARY_DIR}
+        lib/u8g2/csrc
 )
     # target_include_directories(pico_examples PRIVATE
     #         ${CMAKE_CURRENT_LIST_DIR}
