@@ -21,7 +21,7 @@ uint8_t u8x8_gpio_and_delay_pico(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, voi
 uint8_t u8x8_byte_4wire_hw_spi_pico(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr) {
     switch(msg) {
         case U8X8_MSG_BYTE_INIT:
-            spi_init(spi1, 1000 * 1000); // 1 MHz, using spi1 for GP14/GP15
+            spi_init(spi1, 500 * 1000); // Try slower 500kHz speed
             gpio_set_function(PIN_SPI_SCK, GPIO_FUNC_SPI);
             gpio_set_function(PIN_SPI_MOSI, GPIO_FUNC_SPI);
             break;
@@ -86,26 +86,32 @@ int main() {
     printf("Starting SH1107 display test...\n");
 
     // Try different SH1107 variants - some displays need specific initialization
-    // First try the generic 128x128 setup
-    u8g2_Setup_sh1107_128x128_f(
+    // Try the Seeed Studio variant (often works better)
+    u8g2_Setup_sh1107_seeed_128x128_f(
         &u8g2,
         U8G2_R0,
         u8x8_byte_4wire_hw_spi_pico,
         u8x8_gpio_and_delay_pico
     );
     
-    // Alternative setups to try if the above doesn't work:
+    // Alternative setups to try:
+    // u8g2_Setup_sh1107_128x128_f(&u8g2, U8G2_R0, u8x8_byte_4wire_hw_spi_pico, u8x8_gpio_and_delay_pico);
     // u8g2_Setup_sh1107_i2c_128x128_f(&u8g2, U8G2_R0, u8x8_byte_sw_i2c, u8x8_gpio_and_delay_pico);
-    // u8g2_Setup_sh1107_seeed_128x128_f(&u8g2, U8G2_R0, u8x8_byte_4wire_hw_spi_pico, u8x8_gpio_and_delay_pico);
     
     printf("Initializing display...\n");
+    
+    // Perform a manual reset sequence before initialization
+    gpio_put(PIN_SPI_RESET, 0);  // Pull reset low
+    sleep_ms(10);                // Hold for 10ms
+    gpio_put(PIN_SPI_RESET, 1);  // Release reset
+    sleep_ms(50);                // Wait for display to stabilize
     
     // Initialize display with proper timing
     u8g2_InitDisplay(&u8g2);
     u8g2_SetPowerSave(&u8g2, 0);
     
-    // Add a short delay after initialization
-    sleep_ms(100);
+    // Add a longer delay after initialization
+    sleep_ms(200);
     printf("Display initialized.\n");
 
     // Test 1: Clear and show text
