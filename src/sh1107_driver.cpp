@@ -135,8 +135,8 @@ void SH1107_Display::spi_write_data_buffer(uint8_t* data, size_t len) {
 }
 
 bool SH1107_Display::begin() {
-    // Initialize SPI
-    spi_init(spi, 1000000); // 1MHz
+    // Initialize SPI - SH1107 typically works with CPOL=1, CPHA=1 (Mode 3)
+    spi_init(spi, 10000000); // 10MHz (Python uses 10_000_000)
     spi_set_format(spi, 8, SPI_CPOL_1, SPI_CPHA_1, SPI_MSB_FIRST);
     
     // Initialize GPIO pins
@@ -159,29 +159,28 @@ bool SH1107_Display::begin() {
     gpio_put(reset_pin, 1);
     sleep_ms(20);
     
-    // SH1107 initialization sequence
+    // SH1107 initialization sequence (following Python reference)
     spi_write_command(SH1107_DISPLAYOFF);
-    spi_write_command(SH1107_SETDISPLAYCLOCKDIV);
-    spi_write_command(0x51);
     spi_write_command(SH1107_SETMULTIPLEX);
-    spi_write_command(0x7F); // 128-1
-    spi_write_command(SH1107_SETDISPLAYOFFSET);
-    spi_write_command(0x00);
-    spi_write_command(SH1107_SETSTARTLINE | 0x00);
+    spi_write_command(0x7F); // 128-1 for 128x128 display
+    spi_write_command(0x20); // Set Memory addressing mode (0x20 = horizontal, 0x21 = vertical)
+    spi_write_command(0x00); // Horizontal addressing for SH1107
+    spi_write_command(SH1107_PAGEADDR | 0x00); // Set page address to zero
     spi_write_command(SH1107_DCDC);
-    spi_write_command(0x8A);
-    spi_write_command(SH1107_SEGREMAP | 0x01);
-    spi_write_command(SH1107_COMSCANDEC);
-    spi_write_command(SH1107_SETCOMPINS);
-    spi_write_command(0x12);
-    spi_write_command(SH1107_SETCONTRAST);
-    spi_write_command(0x80);
-    spi_write_command(SH1107_SETPRECHARGE);
-    spi_write_command(0x22);
+    spi_write_command(0x81); // Enable charge pump (matches Python 0xad81)
+    spi_write_command(SH1107_SETDISPLAYCLOCKDIV);
+    spi_write_command(0x50); // Python uses 0x50 as POR value
     spi_write_command(SH1107_SETVCOMDETECT);
-    spi_write_command(0x35);
-    spi_write_command(SH1107_DISPLAYALLON);
-    spi_write_command(SH1107_DISPLAYNORMAL);
+    spi_write_command(0x35); // Python POR value 0x35
+    spi_write_command(SH1107_SETPRECHARGE);
+    spi_write_command(0x22); // Python default POR value 0x22
+    spi_write_command(SH1107_SETCONTRAST);
+    spi_write_command(0x00); // Start with 0 contrast (Python calls contrast(0))
+    spi_write_command(SH1107_DISPLAYNORMAL); // Python calls invert(0)
+    spi_write_command(SH1107_SETDISPLAYOFFSET);
+    spi_write_command(0x00); // Row offset for 128x128
+    spi_write_command(SH1107_SEGREMAP | 0x00); // Python flip() logic
+    spi_write_command(SH1107_COMSCANINC); // Python flip() logic
     spi_write_command(SH1107_DISPLAYON);
     
     clearDisplay();
@@ -293,4 +292,157 @@ void SH1107_Display::invertDisplay(bool invert) {
 
 void SH1107_Display::displayOn(bool on) {
     spi_write_command(on ? SH1107_DISPLAYON : SH1107_DISPLAYOFF);
+}
+
+void SH1107_Display::drawCircle(uint8_t x0, uint8_t y0, uint8_t radius, bool color, bool filled) {
+    if (!filled) {
+        // Bresenham's circle algorithm (from framebuf2.py)
+        int f = 1 - radius;
+        int ddF_x = 1;
+        int ddF_y = -2 * radius;
+        int x = 0;
+        int y = radius;
+        
+        setPixel(x0, y0 + radius, color);
+        setPixel(x0, y0 - radius, color);
+        setPixel(x0 + radius, y0, color);
+        setPixel(x0 - radius, y0, color);
+        
+        while (x < y) {
+            if (f >= 0) {
+                y--;
+                ddF_y += 2;
+                f += ddF_y;
+            }
+            x++;
+            ddF_x += 2;
+            f += ddF_x;
+            
+            setPixel(x0 + x, y0 + y, color);
+            setPixel(x0 - x, y0 + y, color);
+            setPixel(x0 + x, y0 - y, color);
+            setPixel(x0 - x, y0 - y, color);
+            setPixel(x0 + y, y0 + x, color);
+            setPixel(x0 - y, y0 + x, color);
+            setPixel(x0 + y, y0 - x, color);
+            setPixel(x0 - y, y0 - x, color);
+        }
+    } else {
+        // Filled circle (from framebuf2.py)
+        drawLine(x0, y0 - radius, x0, y0 + radius, color);
+        int f = 1 - radius;
+        int ddF_x = 1;
+        int ddF_y = -2 * radius;
+        int x = 0;
+        int y = radius;
+        
+        while (x < y) {
+            if (f >= 0) {
+                y--;
+                ddF_y += 2;
+                f += ddF_y;
+            }
+            x++;
+            ddF_x += 2;
+            f += ddF_x;
+            
+            drawLine(x0 + x, y0 - y, x0 + x, y0 + y, color);
+            drawLine(x0 + y, y0 - x, x0 + y, y0 + x, color);
+            drawLine(x0 - x, y0 - y, x0 - x, y0 + y, color);
+            drawLine(x0 - y, y0 - x, x0 - y, y0 + x, color);
+        }
+    }
+}
+
+void SH1107_Display::drawTriangle(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2, bool color, bool filled) {
+    if (!filled) {
+        drawLine(x0, y0, x1, y1, color);
+        drawLine(x1, y1, x2, y2, color);
+        drawLine(x2, y2, x0, y0, color);
+    } else {
+        // Filled triangle algorithm (from framebuf2.py)
+        // Sort vertices by y coordinate
+        if (y0 > y1) {
+            uint8_t temp;
+            temp = y0; y0 = y1; y1 = temp;
+            temp = x0; x0 = x1; x1 = temp;
+        }
+        if (y1 > y2) {
+            uint8_t temp;
+            temp = y2; y2 = y1; y1 = temp;
+            temp = x2; x2 = x1; x1 = temp;
+        }
+        if (y0 > y1) {
+            uint8_t temp;
+            temp = y0; y0 = y1; y1 = temp;
+            temp = x0; x0 = x1; x1 = temp;
+        }
+        
+        if (y0 == y2) {
+            // Degenerate case
+            uint8_t a = x0, b = x0;
+            if (x1 < a) a = x1;
+            else if (x1 > b) b = x1;
+            if (x2 < a) a = x2;
+            else if (x2 > b) b = x2;
+            drawLine(a, y0, b, y0, color);
+            return;
+        }
+        
+        int dx01 = x1 - x0;
+        int dy01 = y1 - y0;
+        int dx02 = x2 - x0;
+        int dy02 = y2 - y0;
+        int dx12 = x2 - x1;
+        int dy12 = y2 - y1;
+        
+        if (dy01 == 0) dy01 = 1;
+        if (dy02 == 0) dy02 = 1;
+        if (dy12 == 0) dy12 = 1;
+        
+        int sa = 0, sb = 0;
+        int y = y0;
+        int last = (y0 == y1) ? y1 - 1 : y1;
+        
+        while (y <= last) {
+            int a = x0 + sa / dy01;
+            int b = x0 + sb / dy02;
+            sa += dx01;
+            sb += dx02;
+            if (a > b) {
+                int temp = a; a = b; b = temp;
+            }
+            drawLine(a, y, b, y, color);
+            y++;
+        }
+        
+        sa = dx12 * (y - y1);
+        sb = dx02 * (y - y0);
+        while (y <= y2) {
+            int a = x1 + sa / dy12;
+            int b = x0 + sb / dy02;
+            sa += dx12;
+            sb += dx02;
+            if (a > b) {
+                int temp = a; a = b; b = temp;
+            }
+            drawLine(a, y, b, y, color);
+            y++;
+        }
+    }
+}
+
+void SH1107_Display::setDisplayStartLine(uint8_t line) {
+    // From Python reference: valid values are 0 to 127
+    spi_write_command(SH1107_SETDISPLAYSTARTLINE);
+    spi_write_command(line & 0x7F);
+}
+
+void SH1107_Display::flip(bool horizontal, bool vertical) {
+    // Based on Python flip() function logic
+    uint8_t remap = horizontal ? 0x01 : 0x00;
+    uint8_t direction = vertical ? 0x08 : 0x00;
+    
+    spi_write_command(SH1107_SEGREMAP | remap);
+    spi_write_command(SH1107_COMSCANINC | direction);
 }

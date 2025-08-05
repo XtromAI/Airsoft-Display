@@ -5,13 +5,15 @@
 #include "hardware/spi.h"
 #include "hardware/gpio.h"
 
-// SH1107 Commands
+// SH1107 Commands (matching Python reference)
 #define SH1107_SETLOWCOLUMN     0x00
 #define SH1107_SETHIGHCOLUMN    0x10
+#define SH1107_MEMORYMODE       0x20  // Set Memory addressing mode
 #define SH1107_SETSTARTLINE     0x40
 #define SH1107_SETCONTRAST      0x81
 #define SH1107_SEGREMAP         0xA0
 #define SH1107_DISPLAYALLON     0xA4
+#define SH1107_DISPLAYALLOFF    0xA5
 #define SH1107_DISPLAYNORMAL    0xA6
 #define SH1107_DISPLAYINVERT    0xA7
 #define SH1107_SETMULTIPLEX     0xA8
@@ -26,6 +28,7 @@
 #define SH1107_SETPRECHARGE     0xD9
 #define SH1107_SETCOMPINS       0xDA
 #define SH1107_SETVCOMDETECT    0xDB
+#define SH1107_SETDISPLAYSTARTLINE 0xDC  // Python reference uses this
 
 class SH1107_Display {
 private:
@@ -57,6 +60,12 @@ public:
     void setContrast(uint8_t contrast);
     void invertDisplay(bool invert);
     void displayOn(bool on);
+    
+    // Additional functions from Python reference
+    void drawCircle(uint8_t x0, uint8_t y0, uint8_t radius, bool color, bool filled = false);
+    void drawTriangle(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2, bool color, bool filled = false);
+    void setDisplayStartLine(uint8_t line);
+    void flip(bool horizontal = false, bool vertical = false);
 };
 
 #endif // SH1107_DRIVER_H
