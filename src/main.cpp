@@ -22,29 +22,28 @@ uint8_t u8x8_gpio_and_delay_pico(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, voi
 uint8_t u8x8_byte_4wire_hw_spi_pico(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr) {
     switch(msg) {
         case U8X8_MSG_BYTE_INIT:
-            // Explicitly setting the SPI format is crucial for stability.
-            // SH1107 and SSD1306 displays typically use CPOL=0 and CPHA=0.
-            spi_init(spi1, 250 * 1000);
-            spi_set_format(spi1, 8, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
-
+            // Set SPI to 1 MHz to match working MicroPython config
+            spi_init(spi1, 1000 * 1000);
+            spi_set_format(spi1, 8, SPI_CPOL_1, SPI_CPHA_1, SPI_MSB_FIRST);
             gpio_set_function(PIN_SPI_SCK, GPIO_FUNC_SPI);
             gpio_set_function(PIN_SPI_MOSI, GPIO_FUNC_SPI);
-
-            printf("SPI initialized with CPOL=0, CPHA=0\n");
+            printf("[SPI INIT] SCK=%d MOSI=%d Mode=3 1MHz\n", PIN_SPI_SCK, PIN_SPI_MOSI);
             break;
         case U8X8_MSG_BYTE_SEND:
-            // Send the data. arg_ptr is a pointer to the data, arg_int is the length.
+            printf("[SPI SEND] %d bytes: ", arg_int);
+            for (int i = 0; i < arg_int; ++i) {
+                printf("%02X ", ((uint8_t*)arg_ptr)[i]);
+            }
+            printf("\n");
             spi_write_blocking(spi1, (const uint8_t*)arg_ptr, arg_int);
-            // The small delay here is a good idea to let the display controller
-            // catch up, especially at higher SPI speeds.
             sleep_us(1);
             break;
         case U8X8_MSG_BYTE_START_TRANSFER:
-            // Activate the Chip Select pin (CS, active low).
+            printf("[SPI CS LOW]\n");
             gpio_put(PIN_SPI_CS, 0);
             break;
         case U8X8_MSG_BYTE_END_TRANSFER:
-            // Deactivate the Chip Select pin.
+            printf("[SPI CS HIGH]\n");
             gpio_put(PIN_SPI_CS, 1);
             break;
         default:
@@ -57,38 +56,39 @@ uint8_t u8x8_byte_4wire_hw_spi_pico(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, 
 uint8_t u8x8_gpio_and_delay_pico(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr) {
     switch(msg) {
         case U8X8_MSG_GPIO_AND_DELAY_INIT:
-            // Initializing all the required GPIOs
             gpio_init(PIN_SPI_CS);
             gpio_set_dir(PIN_SPI_CS, GPIO_OUT);
-            gpio_put(PIN_SPI_CS, 1); // CS starts high (inactive)
-
+            gpio_put(PIN_SPI_CS, 1);
             gpio_init(PIN_SPI_DC);
             gpio_set_dir(PIN_SPI_DC, GPIO_OUT);
-            // The DC line determines if we are sending a command (0) or data (1).
-            // It should be handled by u8g2, but we initialize it to a safe state.
             gpio_put(PIN_SPI_DC, 0);
-
             gpio_init(PIN_SPI_RESET);
             gpio_set_dir(PIN_SPI_RESET, GPIO_OUT);
-            gpio_put(PIN_SPI_RESET, 1); // RESET starts high (inactive)
-            printf("GPIOs for CS, DC, and RESET configured.\n");
+            gpio_put(PIN_SPI_RESET, 1);
+            printf("[GPIO INIT] CS=%d DC=%d RESET=%d\n", PIN_SPI_CS, PIN_SPI_DC, PIN_SPI_RESET);
             break;
         case U8X8_MSG_DELAY_MILLI:
+            printf("[DELAY] %d ms\n", arg_int);
             sleep_ms(arg_int);
             break;
         case U8X8_MSG_DELAY_10MICRO:
+            printf("[DELAY] %d0 us\n", arg_int);
             sleep_us(arg_int * 10);
             break;
         case U8X8_MSG_DELAY_100NANO:
-            sleep_us(1); // Minimum delay on Pico
+            printf("[DELAY] 100ns (rounded to 1us)\n");
+            sleep_us(1);
             break;
         case U8X8_MSG_GPIO_CS:
+            printf("[GPIO CS] set to %d\n", arg_int);
             gpio_put(PIN_SPI_CS, arg_int);
             break;
         case U8X8_MSG_GPIO_DC:
+            printf("[GPIO DC] set to %d\n", arg_int);
             gpio_put(PIN_SPI_DC, arg_int);
             break;
         case U8X8_MSG_GPIO_RESET:
+            printf("[GPIO RESET] set to %d\n", arg_int);
             gpio_put(PIN_SPI_RESET, arg_int);
             break;
         default:
@@ -105,65 +105,50 @@ int main() {
     
     printf("Starting SH1107 display test...\n");
 
+
     // --- U8g2 Initialization ---
-    // The previous generic setup didn't work, so let's try the Pimoroni variant,
-    // which has a slightly different set of initialization commands. This is a
-    // common way to resolve display-specific issues.
-    u8g2_Setup_sh1107_pimoroni_128x128_f(
+    // Use the standard SH1107 128x128 full buffer SPI constructor (with offset workaround)
+    u8g2_Setup_sh1107_128x128_f(
         &u8g2,
-        U8G2_R0, 
+        U8G2_R0,
         u8x8_byte_4wire_hw_spi_pico,
         u8x8_gpio_and_delay_pico
     );
 
-    // If this still doesn't work, try this one:
-    // u8g2_Setup_sh1107_128x128_f(&u8g2, U8G2_R0, u8x8_byte_4wire_hw_spi_pico, u8x8_gpio_and_delay_pico);
-
-    // And then this one:
-    // u8g2_Setup_sh1107_seeed_128x128_f(&u8g2, U8G2_R0, u8x8_byte_4wire_hw_spi_pico, u8x8_gpio_and_delay_pico);
-
 
     printf("Initializing display...\n");
     
-    // The SH1107 can be very sensitive to the reset timing.
-    // This is a slightly more robust reset sequence.
-    gpio_put(PIN_SPI_RESET, 1);    // Ensure reset is high initially
-    sleep_ms(10);
-    gpio_put(PIN_SPI_RESET, 0);    // Pull reset low
-    sleep_ms(100);                 // Hold low for a sufficient period
-    gpio_put(PIN_SPI_RESET, 1);    // Release reset, allowing the display to boot
-    sleep_ms(200);                 // Wait for the display controller to stabilize
+    // Match MicroPython reset sequence: high 1ms, low 20ms, high 20ms
+    gpio_put(PIN_SPI_RESET, 1);
+    sleep_ms(1);
+    gpio_put(PIN_SPI_RESET, 0);
+    sleep_ms(20);
+    gpio_put(PIN_SPI_RESET, 1);
+    sleep_ms(20);
 
     // Initialize the display using the selected u8g2 setup function.
     u8g2_InitDisplay(&u8g2);
-    // Turn on the display.
     u8g2_SetPowerSave(&u8g2, 0);
+    // Set contrast to 128 (matches MicroPython)
+    u8g2_SetContrast(&u8g2, 128);
+    // Clear and send buffer after init
+    u8g2_ClearBuffer(&u8g2);
+    u8g2_SendBuffer(&u8g2);
 
-    printf("Display initialized and powered on.\n");
+    printf("Display initialized, powered on, and cleared.\n");
 
     // A simple, repeating loop to draw and update the screen
     while (1) {
-        // Clear the buffer
         u8g2_ClearBuffer(&u8g2);
-        
-        // Set the font and draw some text
         u8g2_SetFont(&u8g2, u8g2_font_6x10_tf);
-        u8g2_DrawStr(&u8g2, 0, 15, "Pico SH1107");
-        u8g2_DrawStr(&u8g2, 0, 30, "TEST SUCCESS");
-        
-        // Draw a simple frame
+        // Apply 32-pixel offset for SH1107 128x128 SPI (U8G2)
+        u8g2_DrawStr(&u8g2, 32, 15, "Hello World!");
         u8g2_DrawFrame(&u8g2, 0, 0, 128, 64);
-        
-        // Send the buffer to the display
         u8g2_SendBuffer(&u8g2);
-        
-        sleep_ms(2000); // Wait for 2 seconds
-        
-        // Clear the display for the next frame
+        sleep_ms(2000);
         u8g2_ClearBuffer(&u8g2);
         u8g2_SendBuffer(&u8g2);
-        
-        sleep_ms(1000); // Wait for 1 second
+        sleep_ms(1000);
     }
     
     return 0;
