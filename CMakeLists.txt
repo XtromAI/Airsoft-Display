@@ -34,9 +34,10 @@ project(airsoft-display C CXX ASM)
 pico_sdk_init()
 
 
-# Add u8g2 source files (only csrc for C usage)
-file(GLOB U8G2_SRC "lib/u8g2/csrc/*.c")
-add_executable(airsoft-display src/main.cpp ${U8G2_SRC})
+add_executable(airsoft-display 
+    src/main.cpp 
+    src/sh1107_driver.cpp
+)
     # add_executable(pico_examples pico_examples.cpp)
 
 pico_set_program_name(airsoft-display "airsoft-display")
@@ -60,11 +61,10 @@ target_link_libraries(airsoft-display
     # target_link_libraries(pico_examples
     #         pico_stdlib)
 
-        # Add the standard include files to the build
 target_include_directories(airsoft-display PRIVATE
         ${CMAKE_CURRENT_LIST_DIR}
         ${CMAKE_CURRENT_BINARY_DIR}
-        lib/u8g2/csrc
+        src
 )
     # target_include_directories(pico_examples PRIVATE
     #         ${CMAKE_CURRENT_LIST_DIR}
