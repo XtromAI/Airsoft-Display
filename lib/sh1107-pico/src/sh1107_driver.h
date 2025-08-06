@@ -4,6 +4,7 @@
 #include "pico/stdlib.h"
 #include "hardware/spi.h"
 #include "hardware/gpio.h"
+#include "bitmap_font.h"
 
 // SH1107 Commands (matching Python reference)
 #define SH1107_SETLOWCOLUMN     0x00
@@ -47,6 +48,8 @@ private:
 public:
     SH1107_Display(spi_inst_t* spi_inst, uint8_t cs, uint8_t dc, uint8_t reset, uint8_t w = 128, uint8_t h = 128);
     ~SH1107_Display();
+
+    void drawBitmapChar(uint8_t x, uint8_t y, char c, const BitmapFont& font, bool color);
     
     bool begin();
     void display();

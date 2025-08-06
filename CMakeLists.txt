@@ -37,6 +37,8 @@ pico_sdk_init()
 add_executable(airsoft-display 
     src/main.cpp 
     lib/sh1107-pico/src/sh1107_driver.cpp
+    lib/sh1107-pico/src/font8x8.cpp
+    lib/sh1107-pico/src/font16x16.cpp
 )
     # add_executable(pico_examples pico_examples.cpp)
 
