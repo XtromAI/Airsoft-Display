@@ -114,6 +114,25 @@ void SH1107_Display::drawString(uint8_t x, uint8_t y, const char* str) {
     }
 }
 
+/**
+ * @brief Draw a single character on the display using a bitmap font.
+ * 
+ * This function renders a single character from a bitmap font at the specified position.
+ * The font data is interpreted as follows:
+ * - Each character consists of font.height bytes (one byte per row)
+ * - Each byte represents a horizontal row of pixels within the character
+ * - Within each byte, bit 0 (LSB) represents the leftmost pixel
+ * - Within each byte, bit 7 (MSB) represents the rightmost pixel
+ * - Only the lower font.width bits of each byte are used
+ * 
+ * @param x     X coordinate (in pixels) of the top-left corner of the character
+ * @param y     Y coordinate (in pixels) of the top-left corner of the character  
+ * @param c     ASCII character to draw
+ * @param font  Reference to the bitmap font structure containing glyph data
+ * 
+ * @note Characters outside the font's character range are silently ignored
+ * @note Pixels are set using the setPixel() function with color=true (white/on)
+ */
 void SH1107_Display::drawBitmapChar(uint8_t x, uint8_t y, char c, const BitmapFont& font) {
     int glyph_index = c - font.first_char;
     if (glyph_index < 0 || glyph_index >= font.glyph_count) return;
