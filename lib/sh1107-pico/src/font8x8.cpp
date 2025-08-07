@@ -1,6 +1,6 @@
 #include "font8x8.h"
 
-const unsigned char font8x8[96][8] = {
+const unsigned char font8x8_glyphs[96][8] = {
     {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, // U+0020 (space)
     {0x18, 0x3C, 0x3C, 0x18, 0x18, 0x00, 0x18, 0x00}, // U+0021 (!)
     {0x36, 0x36, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, // U+0022 (")
@@ -99,10 +99,10 @@ const unsigned char font8x8[96][8] = {
     {0xE2, 0x35, 0x35, 0x32, 0x30, 0x30, 0xE0, 0x00}  // U+007F (°C)
 };
 
-const BitmapFont font8x8_meta = {
+const BitmapFont font8x8 = {
     8,       // width
     8,       // height
     127,      // char count
     32,      // first char
-    &font8x8[0][0]
+    &font8x8_glyphs[0][0]
 };

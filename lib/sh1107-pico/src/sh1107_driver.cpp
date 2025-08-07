@@ -9,10 +9,10 @@
 
 // Constructor & Destructor
 
-extern const BitmapFont font8x8_meta;
+extern const BitmapFont font8x8;
 
 SH1107_Display::SH1107_Display(spi_inst_t* spi_inst, uint8_t cs, uint8_t dc, uint8_t reset, uint8_t w, uint8_t h)
-    : spi(spi_inst), cs_pin(cs), dc_pin(dc), reset_pin(reset), width(w), height(h), currentFont(&font8x8_meta) {
+    : spi(spi_inst), cs_pin(cs), dc_pin(dc), reset_pin(reset), width(w), height(h), currentFont(&font8x8) {
     buffer = new uint8_t[(width * height) / 8];
     memset(buffer, 0, (width * height) / 8);
 }
@@ -98,7 +98,7 @@ void SH1107_Display::setPixel(uint8_t x, uint8_t y, bool color /* = true */) {
  * @brief Draw a string of characters on the display using the current font.
  *
  * This function renders a null-terminated ASCII string at the specified (x, y) position
- * using the font currently set by setFont(). Each character is drawn using drawBitmapChar,
+ * using the font currently set by setFont(). Each character is drawn using drawChar,
  * and the cursor advances by the font's width plus one pixel of spacing.
  *
  * @param x     X coordinate (in pixels) of the top-left corner of the first character.
@@ -108,7 +108,7 @@ void SH1107_Display::setPixel(uint8_t x, uint8_t y, bool color /* = true */) {
 void SH1107_Display::drawString(uint8_t x, uint8_t y, const char* str) {
     uint8_t cur_x = x;
     while (*str) {
-        drawBitmapChar(cur_x, y, *str, *currentFont);
+        drawChar(cur_x, y, *str);
         cur_x += currentFont->width + 1;
         str++;
     }
@@ -128,18 +128,19 @@ void SH1107_Display::drawString(uint8_t x, uint8_t y, const char* str) {
  * @param x     X coordinate (in pixels) of the top-left corner of the character
  * @param y     Y coordinate (in pixels) of the top-left corner of the character  
  * @param c     ASCII character to draw
- * @param font  Reference to the bitmap font structure containing glyph data
  * 
  * @note Characters outside the font's character range are silently ignored
  * @note Pixels are set using the setPixel() function with color=true (white/on)
+ * @note Uses the font currently set by setFont()
  */
-void SH1107_Display::drawBitmapChar(uint8_t x, uint8_t y, char c, const BitmapFont& font) {
-    int glyph_index = c - font.first_char;
-    if (glyph_index < 0 || glyph_index >= font.glyph_count) return;
-    const unsigned char* glyph = font.data + glyph_index * font.height; // Use height since each byte is a row
-    for (int row = 0; row < font.height; row++) {
+void SH1107_Display::drawChar(uint8_t x, uint8_t y, char c) {
+    if (!currentFont) return; // Safety check
+    int glyph_index = c - currentFont->first_char;
+    if (glyph_index < 0 || glyph_index >= currentFont->glyph_count) return;
+    const unsigned char* glyph = currentFont->data + glyph_index * currentFont->height; // Use height since each byte is a row
+    for (int row = 0; row < currentFont->height; row++) {
         unsigned char rowData = glyph[row]; // Each byte is a row
-        for (int col = 0; col < font.width; col++) {
+        for (int col = 0; col < currentFont->width; col++) {
             if (rowData & (1 << col)) { // LSB is leftmost pixel (removes horizontal mirror)
                 setPixel(x + col, y + row);
             }

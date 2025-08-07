@@ -52,7 +52,7 @@ public:
     ~SH1107_Display();
 
     void setFont(const BitmapFont* font); // Set the current font
-    void drawBitmapChar(uint8_t x, uint8_t y, char c, const BitmapFont& font);
+    void drawChar(uint8_t x, uint8_t y, char c);
 
     bool begin();
     void display();
