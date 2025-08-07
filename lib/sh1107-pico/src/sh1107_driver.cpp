@@ -117,12 +117,12 @@ void SH1107_Display::drawString(uint8_t x, uint8_t y, const char* str) {
 void SH1107_Display::drawBitmapChar(uint8_t x, uint8_t y, char c, const BitmapFont& font) {
     int glyph_index = c - font.first_char;
     if (glyph_index < 0 || glyph_index >= font.glyph_count) return;
-    const unsigned char* glyph = font.data + glyph_index * font.width;
-    for (int col = 0; col < font.width; col++) {
-        unsigned char colData = glyph[font.width - 1 - col];
-        for (int row = 0; row < font.height; row++) {
-            if (colData & (1 << row)) {
-                setPixel(x + row, y + col);
+    const unsigned char* glyph = font.data + glyph_index * font.height; // Use height since each byte is a row
+    for (int row = 0; row < font.height; row++) {
+        unsigned char rowData = glyph[row]; // Each byte is a row
+        for (int col = 0; col < font.width; col++) {
+            if (rowData & (1 << col)) { // LSB is leftmost pixel (removes horizontal mirror)
+                setPixel(x + col, y + row);
             }
         }
     }
