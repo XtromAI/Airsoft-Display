@@ -87,6 +87,10 @@ void SH1107_Display::setPixel(uint8_t x, uint8_t y, bool color /* = true */) {
     if (x >= width || y >= height) return;
     uint16_t index = x + (y / 8) * width;
     uint8_t bit = y % 8;
+    
+    // Additional bounds check for buffer safety
+    if (index >= (width * height) / 8) return;
+    
     if (color) {
         buffer[index] |= (1 << bit);
     } else {
@@ -119,11 +123,11 @@ void SH1107_Display::drawString(uint8_t x, uint8_t y, const char* str) {
  * 
  * This function renders a single character from a bitmap font at the specified position.
  * The font data is interpreted as follows:
- * - Each character consists of font.height bytes (one byte per row)
- * - Each byte represents a horizontal row of pixels within the character
+ * - For fonts with width <= 8: Each character consists of font.height bytes (one byte per row)
+ * - For fonts with width > 8: Each character consists of font.height * ((width + 7) / 8) bytes
+ * - Each byte represents part of a horizontal row of pixels within the character
  * - Within each byte, bit 0 (LSB) represents the leftmost pixel
  * - Within each byte, bit 7 (MSB) represents the rightmost pixel
- * - Only the lower font.width bits of each byte are used
  * 
  * @param x     X coordinate (in pixels) of the top-left corner of the character
  * @param y     Y coordinate (in pixels) of the top-left corner of the character  
@@ -137,12 +141,27 @@ void SH1107_Display::drawChar(uint8_t x, uint8_t y, char c) {
     if (!currentFont) return; // Safety check
     int glyph_index = c - currentFont->first_char;
     if (glyph_index < 0 || glyph_index >= currentFont->glyph_count) return;
-    const unsigned char* glyph = currentFont->data + glyph_index * currentFont->height; // Use height since each byte is a row
+    
+    // Calculate bytes per row based on font width
+    int bytes_per_row = (currentFont->width + 7) / 8;
+    int bytes_per_glyph = currentFont->height * bytes_per_row;
+    
+    const unsigned char* glyph = currentFont->data + glyph_index * bytes_per_glyph;
+    
     for (int row = 0; row < currentFont->height; row++) {
-        unsigned char rowData = glyph[row]; // Each byte is a row
-        for (int col = 0; col < currentFont->width; col++) {
-            if (rowData & (1 << col)) { // LSB is leftmost pixel (removes horizontal mirror)
-                setPixel(x + col, y + row);
+        for (int byte_in_row = 0; byte_in_row < bytes_per_row; byte_in_row++) {
+            unsigned char rowData = glyph[row * bytes_per_row + byte_in_row];
+            int base_col = byte_in_row * 8;
+            
+            for (int bit = 0; bit < 8 && (base_col + bit) < currentFont->width; bit++) {
+                if (rowData & (1 << bit)) { // LSB is leftmost pixel
+                    int pixel_x = x + base_col + bit;
+                    int pixel_y = y + row;
+                    // Bounds check to prevent crashes
+                    if (pixel_x < width && pixel_y < height) {
+                        setPixel(pixel_x, pixel_y);
+                    }
+                }
             }
         }
     }

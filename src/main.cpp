@@ -75,9 +75,10 @@ int main() {
 
         // // Test 6: 16x16 Digit Demo
         display.clearDisplay();
+        display.setFont(&font8x8);
         display.drawString(0, 0, "8X8 FONT");
         display.setFont(&font16x16);
-        display.drawString(0, 64, "123");
+        display.drawString(0, 48, "123");
         display.display();
 
         sleep_ms(2000);
