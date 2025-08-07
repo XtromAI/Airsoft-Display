@@ -40,10 +40,11 @@ void SH1107_Display::drawBitmapChar(uint8_t x, uint8_t y, char c, const BitmapFo
     // Each glyph is font.width columns, each column is font.height bits
     const unsigned char* glyph = font.data + glyph_index * font.width;
     for (int col = 0; col < font.width; col++) {
-        unsigned char colData = glyph[col];
+        // Read columns in reverse order for horizontal flip
+        unsigned char colData = glyph[font.width - 1 - col];
         for (int row = 0; row < font.height; row++) {
             if (colData & (1 << row)) {
-                setPixel(x + (font.width - 1 - row), y + col, color); // horizontal flip for consistency
+                setPixel(x + row, y + col, color);
             }
         }
     }

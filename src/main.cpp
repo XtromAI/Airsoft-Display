@@ -74,22 +74,7 @@ int main() {
 
         // // Test 6: 16x16 Digit Demo
         display.clearDisplay();
-        display.drawString(16, 0, "16x16 Digits", true);
-        // Draw digits 0-9 using font16x16_digits
-        for (int d = 0; d < 10; d++) {
-            int x = 8 + d * 16; // Spacing: 16 pixels per digit (matches font width)
-            int y = 24;
-            // Draw the 16x16 bitmap for digit d
-            for (int col = 0; col < 16; col++) {
-                unsigned char colData = font16x16_digits[d][col];
-                for (int row = 0; row < 16; row++) {
-                    // If font data uses MSB as top pixel, reverse bit order:
-                    if (colData & (1 << (15 - row))) {
-                        display.setPixel(x + row, y + col, true);
-                    }
-                }
-            }
-        }
+        display.drawString(32, 0, "8x8 FONT", true);
         display.display();
         sleep_ms(2000);
     }
