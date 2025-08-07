@@ -8,10 +8,17 @@
 #include "font8x8.h"
 
 // Constructor & Destructor
+
+extern const BitmapFont font8x8_meta;
+
 SH1107_Display::SH1107_Display(spi_inst_t* spi_inst, uint8_t cs, uint8_t dc, uint8_t reset, uint8_t w, uint8_t h)
-    : spi(spi_inst), cs_pin(cs), dc_pin(dc), reset_pin(reset), width(w), height(h) {
+    : spi(spi_inst), cs_pin(cs), dc_pin(dc), reset_pin(reset), width(w), height(h), currentFont(&font8x8_meta) {
     buffer = new uint8_t[(width * height) / 8];
     memset(buffer, 0, (width * height) / 8);
+}
+// Set the current font to be used for drawString
+void SH1107_Display::setFont(const BitmapFont* font) {
+    currentFont = font;
 }
 
 SH1107_Display::~SH1107_Display() {
@@ -76,7 +83,7 @@ void SH1107_Display::clearDisplay() {
     memset(buffer, 0, (width * height) / 8);
 }
 
-void SH1107_Display::setPixel(uint8_t x, uint8_t y, bool color) {
+void SH1107_Display::setPixel(uint8_t x, uint8_t y, bool color /* = true */) {
     if (x >= width || y >= height) return;
     uint16_t index = x + (y / 8) * width;
     uint8_t bit = y % 8;
@@ -87,17 +94,27 @@ void SH1107_Display::setPixel(uint8_t x, uint8_t y, bool color) {
     }
 }
 
-extern const BitmapFont font8x8_meta;
-void SH1107_Display::drawString(uint8_t x, uint8_t y, const char* str, bool color) {
+/**
+ * @brief Draw a string of characters on the display using the current font.
+ *
+ * This function renders a null-terminated ASCII string at the specified (x, y) position
+ * using the font currently set by setFont(). Each character is drawn using drawBitmapChar,
+ * and the cursor advances by the font's width plus one pixel of spacing.
+ *
+ * @param x     X coordinate (in pixels) of the top-left corner of the first character.
+ * @param y     Y coordinate (in pixels) of the top-left corner of the first character.
+ * @param str   Null-terminated C string to draw.
+ */
+void SH1107_Display::drawString(uint8_t x, uint8_t y, const char* str) {
     uint8_t cur_x = x;
     while (*str) {
-        drawBitmapChar(cur_x, y, *str, font8x8_meta, color);
-        cur_x += font8x8_meta.width + 1;
+        drawBitmapChar(cur_x, y, *str, *currentFont);
+        cur_x += currentFont->width + 1;
         str++;
     }
 }
 
-void SH1107_Display::drawBitmapChar(uint8_t x, uint8_t y, char c, const BitmapFont& font, bool color) {
+void SH1107_Display::drawBitmapChar(uint8_t x, uint8_t y, char c, const BitmapFont& font) {
     int glyph_index = c - font.first_char;
     if (glyph_index < 0 || glyph_index >= font.glyph_count) return;
     const unsigned char* glyph = font.data + glyph_index * font.width;
@@ -105,7 +122,7 @@ void SH1107_Display::drawBitmapChar(uint8_t x, uint8_t y, char c, const BitmapFo
         unsigned char colData = glyph[font.width - 1 - col];
         for (int row = 0; row < font.height; row++) {
             if (colData & (1 << row)) {
-                setPixel(x + row, y + col, color);
+                setPixel(x + row, y + col);
             }
         }
     }

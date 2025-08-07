@@ -38,16 +38,16 @@ int main() {
     while (1) {
         // // Test 1: Basic text and rectangles
         // display.clearDisplay();
-        // display.drawString(0, 0, "Hello World!", true);
-        // display.drawString(0, 16, "Custom Driver", true);
-        // display.drawString(0, 32, "SH1107 128x128", true);
+        // display.drawString(0, 0, "Hello World!");
+        // display.drawString(0, 16, "Custom Driver");
+        // display.drawString(0, 32, "SH1107 128x128");
         // display.drawRect(0, 48, 128, 16, true);
         // display.display();
         // sleep_ms(2000);
         
         // // Test 2: Circle graphics (new function)
         // display.clearDisplay();
-        // display.drawString(16, 0, "Circle Test", true);
+        // display.drawString(16, 0, "Circle Test");
         // display.drawCircle(64, 40, 20, true, false);  // Outline circle
         // display.drawCircle(32, 70, 8, true, true);    // Filled circle
         // display.drawCircle(96, 70, 8, true, true);    // Filled circle
@@ -56,7 +56,7 @@ int main() {
         
         // // Test 3: Triangle graphics (new function)
         // display.clearDisplay();
-        // display.drawString(12, 0, "Triangle Test", true);
+        // display.drawString(12, 0, "Triangle Test");
         // display.drawTriangle(64, 20, 40, 60, 88, 60, true, false); // Outline
         // display.drawTriangle(20, 80, 35, 100, 5, 100, true, true); // Filled
         // display.drawTriangle(93, 80, 108, 100, 78, 100, true, true); // Filled
@@ -65,7 +65,7 @@ int main() {
         
         // // Test 4: Lines and patterns
         // display.clearDisplay();
-        // display.drawString(24, 0, "Line Test", true);
+        // display.drawString(24, 0, "Line Test");
         // for (int i = 0; i < 128; i += 8) {
         //     display.drawLine(0, 16, i, 128, true);
         // }
@@ -74,7 +74,7 @@ int main() {
 
         // // Test 6: 16x16 Digit Demo
         display.clearDisplay();
-        display.drawString(32, 0, "8x8 FONT", true);
+        display.drawString(0, 0, "8x8 FONT");
         display.display();
         sleep_ms(2000);
     }

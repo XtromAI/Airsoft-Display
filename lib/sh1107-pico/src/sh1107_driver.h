@@ -31,6 +31,7 @@
 #define SH1107_SETVCOMDETECT    0xDB
 #define SH1107_SETDISPLAYSTARTLINE 0xDC  // Python reference uses this
 
+
 class SH1107_Display {
 private:
     spi_inst_t* spi;
@@ -40,29 +41,31 @@ private:
     uint8_t width;
     uint8_t height;
     uint8_t* buffer;
-    
+    const BitmapFont* currentFont; // Pointer to current font
+
     void spi_write_command(uint8_t cmd);
     void spi_write_data(uint8_t data);
     void spi_write_data_buffer(uint8_t* data, size_t len);
-    
+
 public:
     SH1107_Display(spi_inst_t* spi_inst, uint8_t cs, uint8_t dc, uint8_t reset, uint8_t w = 128, uint8_t h = 128);
     ~SH1107_Display();
 
-    void drawBitmapChar(uint8_t x, uint8_t y, char c, const BitmapFont& font, bool color);
-    
+    void setFont(const BitmapFont* font); // Set the current font
+    void drawBitmapChar(uint8_t x, uint8_t y, char c, const BitmapFont& font);
+
     bool begin();
     void display();
     void clearDisplay();
-    void setPixel(uint8_t x, uint8_t y, bool color);
+    void setPixel(uint8_t x, uint8_t y, bool color = true);
     void drawLine(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1, bool color);
     void drawRect(uint8_t x, uint8_t y, uint8_t w, uint8_t h, bool color);
     void fillRect(uint8_t x, uint8_t y, uint8_t w, uint8_t h, bool color);
-    void drawString(uint8_t x, uint8_t y, const char* str, bool color);
+    void drawString(uint8_t x, uint8_t y, const char* str);
     void setContrast(uint8_t contrast);
     void invertDisplay(bool invert);
     void displayOn(bool on);
-    
+
     // Additional functions from Python reference
     void drawCircle(uint8_t x0, uint8_t y0, uint8_t radius, bool color, bool filled = false);
     void drawTriangle(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2, bool color, bool filled = false);
