@@ -9,8 +9,8 @@
 // Returns true if successful, false if initialization failed.
 bool sh1107_demo(SH1107_Display& display, uint32_t delay_ms) {
     display.clearDisplay();
-    display.drawString(display.centerx(), display.centery(), "Hello World!");
-    display.drawString(display.centerx(), display.centery() + 16, "CENTERED");
+    display.drawString(display.centerx(), display.centery() - 8, "Hello World!");
+    display.drawString(display.centerx(), display.centery() + 8, "CENTERED");
     display.display();
     sleep_ms(delay_ms);
     display.clearDisplay();
