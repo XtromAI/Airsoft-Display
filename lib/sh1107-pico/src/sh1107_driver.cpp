@@ -226,9 +226,11 @@ void SH1107_Display::fillRect(uint8_t x, uint8_t y, uint8_t w, uint8_t h, bool c
 
 void SH1107_Display::drawCircle(uint8_t x0, uint8_t y0, uint8_t radius, bool color, bool filled) {
     if (!filled) {
-        int x = radius;
+        // Classic midpoint circle algorithm, diameter = 2*radius (not 2*radius+1)
+        int r = radius - 1;
+        int x = r;
         int y = 0;
-        int p = 1 - radius;
+        int p = 1 - r;
         while (x >= y) {
             setPixel(x0 + x, y0 + y, color);
             setPixel(x0 - x, y0 + y, color);

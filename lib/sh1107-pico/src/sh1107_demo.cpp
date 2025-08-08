@@ -10,6 +10,7 @@
 bool sh1107_demo(SH1107_Display& display, uint32_t delay_ms) {
     display.clearDisplay();
     display.drawString(display.centerx(), display.centery(), "Hello World!");
+    display.drawString(display.centerx(), display.centery() + 16, "CENTERED");
     display.display();
     sleep_ms(delay_ms);
     display.clearDisplay();
@@ -25,9 +26,13 @@ bool sh1107_demo(SH1107_Display& display, uint32_t delay_ms) {
     display.display();
     sleep_ms(delay_ms);
     display.clearDisplay();
-    for (int y = 8; y + 8 <= display.getHeight(); y += 16) {
-        for (int x = 8; x + 8 <= display.getWidth(); x += 16) {
-            display.drawCircle(x, y, 8, 1);
+    // Draw circles fully within the display area, starting at (0,0)
+    int radius = 8;
+    // Center circles in each 16x16 cell, starting at (7,7)
+    for (int y = 8, row = 0; y + radius <= display.getHeight(); y += 16, ++row) {
+        for (int x = 8, col = 0; x + radius <= display.getWidth(); x += 16, ++col) {
+            bool fill = ((row + col) % 2 == 0);
+            display.drawCircle(x, y, radius, 1, fill ? 1 : 0);
         }
     }
     display.display();
