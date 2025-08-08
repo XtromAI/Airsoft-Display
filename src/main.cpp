@@ -107,11 +107,11 @@ void display_main() {
             display.display();
         }
         
-        // Periodically run the demo to show display capabilities
-        if (display_update_counter % 1000 == 0) {
-            printf("Core 0: Running display demo...\n");
-            sh1107_demo(display, demo_delay_ms);
-        }
+        // // Periodically run the demo to show display capabilities
+        // if (display_update_counter % 1000 == 0) {
+        //     printf("Core 0: Running display demo...\n");
+        //     sh1107_demo(display, demo_delay_ms);
+        // }
         
         display_update_counter++;
         sleep_ms(50); // 20Hz display update rate
