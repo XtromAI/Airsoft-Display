@@ -60,23 +60,27 @@ public:
     void display();
     void clearDisplay();
     void setPixel(uint8_t x, uint8_t y, bool color = true);
-    void drawLine(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1, bool color);
-    void drawRect(uint8_t x, uint8_t y, uint8_t w, uint8_t h, bool color);
-    void fillRect(uint8_t x, uint8_t y, uint8_t w, uint8_t h, bool color);
+    void drawLine(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1, bool color = true);
+    void drawRect(uint8_t x, uint8_t y, uint8_t w, uint8_t h, bool color = true);
+    void fillRect(uint8_t x, uint8_t y, uint8_t w, uint8_t h, bool color = true);
     void drawString(uint8_t x, uint8_t y, const char* str);
     void setContrast(uint8_t contrast);
     void invertDisplay(bool invert);
     void displayOn(bool on);
 
     // Additional functions from Python reference
-    void drawCircle(uint8_t x0, uint8_t y0, uint8_t radius, bool color, bool filled = false);
-    void drawTriangle(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2, bool color, bool filled = false);
+    void drawCircle(uint8_t x0, uint8_t y0, uint8_t radius, bool color = true, bool filled = false);
+    void drawTriangle(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2, bool color = true, bool filled = false);
     void setDisplayStartLine(uint8_t line);
     void flip(bool horizontal = false, bool vertical = false);
 
     // Center coordinates for convenience
     inline uint8_t centerx() const { return width / 2; }
     inline uint8_t centery() const { return height / 2; }
+    
+    // Public getters for width and height
+    inline uint8_t getWidth() const { return width; }
+    inline uint8_t getHeight() const { return height; }
 };
 
 #endif // SH1107_DRIVER_H

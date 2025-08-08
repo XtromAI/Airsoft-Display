@@ -38,15 +38,12 @@ int main() {
     printf("Display initialized successfully!\n");
 
     // Run the SH1107 demo once at startup
-    //sh1107_demo(display);
-    display.begin();
-    display.drawString(display.centerx(), display.centery(), "Hello World!");
-    display.display();
 
     // Main loop: (user can add custom drawing here)
+    const uint32_t demo_delay_ms = 4000;
     while (1) {
         // Optionally, add your own drawing code here
-        sleep_ms(1000); // Idle loop
+        sh1107_demo(display, demo_delay_ms);
     }
     return 0;
 }

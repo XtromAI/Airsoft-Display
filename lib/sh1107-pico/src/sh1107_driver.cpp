@@ -226,24 +226,10 @@ void SH1107_Display::fillRect(uint8_t x, uint8_t y, uint8_t w, uint8_t h, bool c
 
 void SH1107_Display::drawCircle(uint8_t x0, uint8_t y0, uint8_t radius, bool color, bool filled) {
     if (!filled) {
-        int f = 1 - radius;
-        int ddF_x = 1;
-        int ddF_y = -2 * radius;
-        int x = 0;
-        int y = radius;
-        setPixel(x0, y0 + radius, color);
-        setPixel(x0, y0 - radius, color);
-        setPixel(x0 + radius, y0, color);
-        setPixel(x0 - radius, y0, color);
-        while (x < y) {
-            if (f >= 0) {
-                y--;
-                ddF_y += 2;
-                f += ddF_y;
-            }
-            x++;
-            ddF_x += 2;
-            f += ddF_x;
+        int x = radius;
+        int y = 0;
+        int p = 1 - radius;
+        while (x >= y) {
             setPixel(x0 + x, y0 + y, color);
             setPixel(x0 - x, y0 + y, color);
             setPixel(x0 + x, y0 - y, color);
@@ -252,6 +238,13 @@ void SH1107_Display::drawCircle(uint8_t x0, uint8_t y0, uint8_t radius, bool col
             setPixel(x0 - y, y0 + x, color);
             setPixel(x0 + y, y0 - x, color);
             setPixel(x0 - y, y0 - x, color);
+            y++;
+            if (p <= 0) {
+                p = p + 2 * y + 1;
+            } else {
+                x--;
+                p = p + 2 * y - 2 * x + 1;
+            }
         }
     } else {
         drawLine(x0, y0 - radius, x0, y0 + radius, color);
