@@ -42,6 +42,7 @@ private:
     uint8_t height;
     uint8_t* buffer;
     const BitmapFont* currentFont; // Pointer to current font
+    uint8_t charSpacing = 0; // Character spacing in pixels (default 0)
 
     void spi_write_command(uint8_t cmd);
     void spi_write_data(uint8_t data);
@@ -52,6 +53,7 @@ public:
     ~SH1107_Display();
 
     void setFont(const BitmapFont* font); // Set the current font
+    void setCharSpacing(uint8_t spacing); // Set character spacing
     void drawChar(uint8_t x, uint8_t y, char c);
 
     bool begin();

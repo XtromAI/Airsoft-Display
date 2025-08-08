@@ -7,18 +7,25 @@
 #include "bitmap_font.h"
 #include "font8x8.h"
 
+
 // Constructor & Destructor
 
 extern const BitmapFont font8x8;
 
 SH1107_Display::SH1107_Display(spi_inst_t* spi_inst, uint8_t cs, uint8_t dc, uint8_t reset, uint8_t w, uint8_t h)
-    : spi(spi_inst), cs_pin(cs), dc_pin(dc), reset_pin(reset), width(w), height(h), currentFont(&font8x8) {
+    : spi(spi_inst), cs_pin(cs), dc_pin(dc), reset_pin(reset), width(w), height(h), currentFont(&font8x8), charSpacing(0) {
     buffer = new uint8_t[(width * height) / 8];
     memset(buffer, 0, (width * height) / 8);
 }
+
 // Set the current font to be used for drawString
 void SH1107_Display::setFont(const BitmapFont* font) {
     currentFont = font;
+}
+
+// Set the character spacing (in pixels) between characters when drawing strings
+void SH1107_Display::setCharSpacing(uint8_t spacing) {
+    charSpacing = spacing;
 }
 
 SH1107_Display::~SH1107_Display() {
@@ -110,11 +117,25 @@ void SH1107_Display::setPixel(uint8_t x, uint8_t y, bool color /* = true */) {
  * @param str   Null-terminated C string to draw.
  */
 void SH1107_Display::drawString(uint8_t x, uint8_t y, const char* str) {
-    uint8_t cur_x = x;
-    while (*str) {
-        drawChar(cur_x, y, *str);
-        cur_x += currentFont->width + 1;
-        str++;
+    // Calculate string length
+    size_t len = strlen(str);
+    if (len == 0 || !currentFont) return;
+
+    // Calculate total width and height of the string in pixels
+    uint8_t str_width = len * (currentFont->width + charSpacing);
+    if (str_width > 0) str_width -= charSpacing; // No extra space after last char
+    uint8_t str_height = currentFont->height;
+
+    // Calculate top-left starting point to center the string at (x, y)
+    int start_x = (int)x - (int)str_width / 2;
+    int start_y = (int)y - (int)str_height / 2;
+
+    uint8_t cur_x = (start_x < 0) ? 0 : (uint8_t)start_x;
+    const char* p = str;
+    while (*p) {
+        drawChar(cur_x, (start_y < 0) ? 0 : (uint8_t)start_y, *p);
+        cur_x += currentFont->width + charSpacing;
+        p++;
     }
 }
 

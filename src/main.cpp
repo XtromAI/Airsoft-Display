@@ -5,7 +5,9 @@
 #include "hardware/gpio.h"
 #include "sh1107_driver.h"
 #include "font8x8.h"
+
 #include "font16x16.h"
+#include "sh1107_demo.h"
 
 // --- Pin assignments ---
 // These pins are for SPI1, which uses GPIO 14 and 15 by default.
@@ -35,54 +37,16 @@ int main() {
     
     printf("Display initialized successfully!\n");
 
-    // Main loop: draw and update the screen with enhanced graphics
+    // Run the SH1107 demo once at startup
+    //sh1107_demo(display);
+    display.begin();
+    display.drawString(64, 64, "Hello World!");
+    display.display();
+
+    // Main loop: (user can add custom drawing here)
     while (1) {
-        // // Test 1: Basic text and rectangles
-        // display.clearDisplay();
-        // display.drawString(0, 0, "Hello World!");
-        // display.drawString(0, 16, "Custom Driver");
-        // display.drawString(0, 32, "SH1107 128x128");
-        // display.drawRect(0, 48, 128, 16, true);
-        // display.display();
-        // sleep_ms(2000);
-        
-        // // Test 2: Circle graphics (new function)
-        // display.clearDisplay();
-        // display.drawString(16, 0, "Circle Test");
-        // display.drawCircle(64, 40, 20, true, false);  // Outline circle
-        // display.drawCircle(32, 70, 8, true, true);    // Filled circle
-        // display.drawCircle(96, 70, 8, true, true);    // Filled circle
-        // display.display();
-        // sleep_ms(2000);
-        
-        // // Test 3: Triangle graphics (new function)
-        // display.clearDisplay();
-        // display.drawString(12, 0, "Triangle Test");
-        // display.drawTriangle(64, 20, 40, 60, 88, 60, true, false); // Outline
-        // display.drawTriangle(20, 80, 35, 100, 5, 100, true, true); // Filled
-        // display.drawTriangle(93, 80, 108, 100, 78, 100, true, true); // Filled
-        // display.display();
-        // sleep_ms(2000);
-        
-        // // Test 4: Lines and patterns
-        // display.clearDisplay();
-        // display.drawString(24, 0, "Line Test");
-        // for (int i = 0; i < 128; i += 8) {
-        //     display.drawLine(0, 16, i, 128, true);
-        // }
-        // display.display();
-        // sleep_ms(2000);
-
-        // // Test 6: 16x16 Digit Demo
-        display.clearDisplay();
-        display.setFont(&font8x8);
-        display.drawString(0, 0, "8X8 FONT");
-        display.setFont(&font16x16);
-        display.drawString(0, 48, "123");
-        display.display();
-
-        sleep_ms(2000);
+        // Optionally, add your own drawing code here
+        sleep_ms(1000); // Idle loop
     }
-    
     return 0;
 }
