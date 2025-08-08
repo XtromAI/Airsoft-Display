@@ -73,6 +73,10 @@ public:
     void drawTriangle(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2, bool color, bool filled = false);
     void setDisplayStartLine(uint8_t line);
     void flip(bool horizontal = false, bool vertical = false);
+
+    // Center coordinates for convenience
+    inline uint8_t centerx() const { return width / 2; }
+    inline uint8_t centery() const { return height / 2; }
 };
 
 #endif // SH1107_DRIVER_H

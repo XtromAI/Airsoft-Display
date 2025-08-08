@@ -40,7 +40,7 @@ int main() {
     // Run the SH1107 demo once at startup
     //sh1107_demo(display);
     display.begin();
-    display.drawString(64, 64, "Hello World!");
+    display.drawString(display.centerx(), display.centery(), "Hello World!");
     display.display();
 
     // Main loop: (user can add custom drawing here)
