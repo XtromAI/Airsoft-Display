@@ -8,6 +8,7 @@
 #include "hardware/adc.h"
 #include "hardware/timer.h"
 #include "hardware/dma.h"
+#include "hardware/watchdog.h"
 #include "sh1107_driver.h"
 #include "font8x8.h"
 #include "font16x16.h"
@@ -49,6 +50,8 @@ mutex_t g_data_mutex;
 // --- Core 0 Functions (Display & UI) ---
 
 void display_main() {
+    // Kick the watchdog as soon as possible
+    watchdog_update();
     printf("Core 0: Starting display and UI...\n");
     
     // Configure SPI pins
@@ -131,8 +134,10 @@ void display_main() {
             last_metrics_time = now;
         }
         
-        display_update_counter++;
-        sleep_ms(50); // 20Hz display update rate
+    display_update_counter++;
+    // Kick the watchdog periodically
+    watchdog_update();
+    sleep_ms(50); // 20Hz display update rate
     }
 }
 
@@ -140,6 +145,12 @@ void display_main() {
 
 int main() {
     stdio_init_all();
+    // Check if we are recovering from a watchdog reset
+    if (watchdog_caused_reboot()) {
+        printf("[Watchdog] System recovered from watchdog reset!\n");
+    }
+    // Enable the watchdog: timeout 2 seconds, pause on debug
+    watchdog_enable(2000, 1);
     printf("Starting Airsoft Display System...\n");
     
     // Initialize mutex
@@ -223,7 +234,9 @@ int main() {
             sleep_ms(500); // Simple debounce
         }
         
-        sleep_ms(10); // 100Hz update rate for now
+    // Kick the watchdog periodically
+    watchdog_update();
+    sleep_ms(10); // 100Hz update rate for now
     }
     
     return 0;
