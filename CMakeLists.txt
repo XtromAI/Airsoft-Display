@@ -40,6 +40,7 @@ add_executable(airsoft-display
     lib/sh1107-pico/src/font8x8.cpp
     lib/sh1107-pico/src/font16x16.cpp
     lib/sh1107-pico/src/sh1107_demo.cpp
+    lib/sh1107-pico/src/wave_demo.cpp
 )
     # add_executable(pico_examples pico_examples.cpp)
 

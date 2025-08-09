@@ -1,3 +1,4 @@
+#include <math.h>
 #include "sh1107_demo.h"
 #include <cstring>
 #include <cstdio>
@@ -39,4 +40,33 @@ bool sh1107_demo(SH1107_Display& display, uint32_t delay_ms) {
     sleep_ms(delay_ms);
     display.clearDisplay();
     return true;
+}
+
+
+// Animates a scrolling sine waveform across the display
+void wave_demo(SH1107_Display& display) {
+    const uint8_t w = display.getWidth();
+    const uint8_t h = display.getHeight();
+    const float pi = 3.14159265f;
+    float phase = 0.0f;
+    const float speed = 0.12f; // phase increment per frame
+    const uint32_t frame_delay = 16; // ~60 FPS
+    const float amplitude = h / 3.0f;
+    const float y_center = h / 2.0f;
+    while (true) {
+        display.clearDisplay();
+        int prev_x = 0;
+        int prev_y = (int)(y_center + amplitude * sinf(phase));
+        for (int x = 1; x < w; ++x) {
+            float theta = phase + (2 * pi * x / w);
+            int y = (int)(y_center + amplitude * sinf(theta));
+            display.drawLine(prev_x, prev_y, x, y);
+            prev_x = x;
+            prev_y = y;
+        }
+        display.display();
+        phase += speed;
+        if (phase > 2 * pi) phase -= 2 * pi;
+        sleep_ms(frame_delay);
+    }
 }

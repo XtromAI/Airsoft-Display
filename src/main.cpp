@@ -13,6 +13,7 @@
 #include "font8x8.h"
 #include "font16x16.h"
 #include "sh1107_demo.h"
+#include "wave_demo.h"
 
 // --- Pin assignments ---
 // Display pins (SPI1)
@@ -76,7 +77,11 @@ void display_main() {
         while (1) sleep_ms(1000);
     }
     
+
     printf("Core 0: Display initialized successfully!\n");
+
+    // Optionally show a demo at startup (commented out)
+    // spinning_triangle_demo(display);
 
     // Display variables
     shared_data_t local_data = {0};
@@ -119,29 +124,8 @@ void display_main() {
             mutex_exit(&g_data_mutex);
         }
 
-        // Always update display at timer interval
-        display.clearDisplay();
-
-        // Display shot count
-        char shot_text[32];
-        snprintf(shot_text, sizeof(shot_text), "Shots: %lu", local_data.shot_count);
-        display.drawString(10, 30, shot_text);
-
-        // Display battery voltage
-        char voltage_text[32];
-        snprintf(voltage_text, sizeof(voltage_text), "%.0fmV", local_data.current_voltage_mv);
-        display.drawString(10, 50, voltage_text);
-
-        // Display Core 1 frequency, padded with spaces to 3 digits before decimal
-        char core1_text[32];
-        snprintf(core1_text, sizeof(core1_text), "C1: %6.1fHz", local_data.core1_loop_hz);
-        display.drawString(10, 70, core1_text);
-        // Display Core 0 frequency, padded with spaces to 3 digits before decimal
-        char core0_text[32];
-        snprintf(core0_text, sizeof(core0_text), "C0: %6.1fHz", core0_display_hz);
-        display.drawString(10, 90, core0_text);
-
-        display.display();
+        // Draw the wave animation demo (one frame per update)
+        wave_demo_frame(display);
         core0_display_count++;
 
         // Update Core 0 display frequency every second
