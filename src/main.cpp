@@ -8,6 +8,7 @@
 #include "hardware/adc.h"
 #include "hardware/timer.h"
 #include "hardware/dma.h"
+#include "hardware/watchdog.h"
 #include "sh1107_driver.h"
 #include "font8x8.h"
 #include "font16x16.h"
@@ -48,7 +49,18 @@ mutex_t g_data_mutex;
 
 // --- Core 0 Functions (Display & UI) ---
 
+// Volatile flag set by timer interrupt to trigger display update
+volatile bool g_display_update_flag = false;
+
+// Timer callback to set display update flag
+bool display_update_timer_callback(repeating_timer_t *rt) {
+    g_display_update_flag = true;
+    return true; // keep repeating
+}
+
 void display_main() {
+    // Kick the watchdog as soon as possible
+    watchdog_update();
     printf("Core 0: Starting display and UI...\n");
     
     // Configure SPI pins
@@ -77,8 +89,19 @@ void display_main() {
     float core0_display_hz = 0.0f;
     absolute_time_t last_metrics_time = core0_start_time;
     
+    // Set up a repeating timer for display updates (e.g., 50ms = 20Hz)
+    repeating_timer_t display_timer;
+    add_repeating_timer_ms(-50, display_update_timer_callback, NULL, &display_timer);
+
     // Core 0 main loop: Display and UI
     while (1) {
+        // Wait for timer to set update flag
+        if (!g_display_update_flag) {
+            tight_loop_contents();
+            continue;
+        }
+        g_display_update_flag = false;
+
         // Read shared data from Core 1 (with mutex protection)
         bool data_available = false;
         if (mutex_try_enter(&g_data_mutex, NULL)) {
@@ -95,34 +118,32 @@ void display_main() {
             }
             mutex_exit(&g_data_mutex);
         }
-        
-        // Update display with current data
-        if (data_available || (display_update_counter % 100 == 0)) {
-            display.clearDisplay();
-            
-            // Display shot count
-            char shot_text[32];
-            snprintf(shot_text, sizeof(shot_text), "Shots: %lu", local_data.shot_count);
-            display.drawString(10, 30, shot_text);
-            
-            // Display battery voltage
-            char voltage_text[32];
-            snprintf(voltage_text, sizeof(voltage_text), "%.0fmV", local_data.current_voltage_mv);
-            display.drawString(10, 50, voltage_text);
-            
-            // Display Core 1 frequency, padded with spaces to 3 digits before decimal
-            char core1_text[32];
-            snprintf(core1_text, sizeof(core1_text), "C1: %6.1fHz", local_data.core1_loop_hz);
-            display.drawString(10, 70, core1_text);
-            // Display Core 0 frequency, padded with spaces to 3 digits before decimal
-            char core0_text[32];
-            snprintf(core0_text, sizeof(core0_text), "C0: %6.1fHz", core0_display_hz);
-            display.drawString(10, 90, core0_text);
-            
-            display.display();
-            core0_display_count++;
-        }
-        
+
+        // Always update display at timer interval
+        display.clearDisplay();
+
+        // Display shot count
+        char shot_text[32];
+        snprintf(shot_text, sizeof(shot_text), "Shots: %lu", local_data.shot_count);
+        display.drawString(10, 30, shot_text);
+
+        // Display battery voltage
+        char voltage_text[32];
+        snprintf(voltage_text, sizeof(voltage_text), "%.0fmV", local_data.current_voltage_mv);
+        display.drawString(10, 50, voltage_text);
+
+        // Display Core 1 frequency, padded with spaces to 3 digits before decimal
+        char core1_text[32];
+        snprintf(core1_text, sizeof(core1_text), "C1: %6.1fHz", local_data.core1_loop_hz);
+        display.drawString(10, 70, core1_text);
+        // Display Core 0 frequency, padded with spaces to 3 digits before decimal
+        char core0_text[32];
+        snprintf(core0_text, sizeof(core0_text), "C0: %6.1fHz", core0_display_hz);
+        display.drawString(10, 90, core0_text);
+
+        display.display();
+        core0_display_count++;
+
         // Update Core 0 display frequency every second
         absolute_time_t now = get_absolute_time();
         if (absolute_time_diff_us(last_metrics_time, now) >= 1000000) {
@@ -130,9 +151,9 @@ void display_main() {
             core0_display_count = 0;
             last_metrics_time = now;
         }
-        
-        display_update_counter++;
-        sleep_ms(50); // 20Hz display update rate
+
+        // Kick the watchdog periodically
+        watchdog_update();
     }
 }
 
@@ -140,6 +161,12 @@ void display_main() {
 
 int main() {
     stdio_init_all();
+    // Check if we are recovering from a watchdog reset
+    if (watchdog_caused_reboot()) {
+        printf("[Watchdog] System recovered from watchdog reset!\n");
+    }
+    // Enable the watchdog: timeout 2 seconds, pause on debug
+    watchdog_enable(2000, 1);
     printf("Starting Airsoft Display System...\n");
     
     // Initialize mutex
@@ -223,7 +250,9 @@ int main() {
             sleep_ms(500); // Simple debounce
         }
         
-        sleep_ms(10); // 100Hz update rate for now
+    // Kick the watchdog periodically
+    watchdog_update();
+    sleep_ms(10); // 100Hz update rate for now
     }
     
     return 0;
