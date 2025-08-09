@@ -37,6 +37,9 @@ typedef struct {
     uint32_t shot_count;
     float moving_average_mv;
     bool data_updated;
+    // Live core metrics
+    uint32_t core1_uptime_ms;
+    float core1_loop_hz;
 } shared_data_t;
 
 // Global shared data and mutex
@@ -68,6 +71,12 @@ void display_main() {
     uint32_t display_update_counter = 0;
     const uint32_t demo_delay_ms = 4000;
     
+    // Core 0 metrics
+    absolute_time_t core0_start_time = get_absolute_time();
+    uint32_t core0_display_count = 0;
+    float core0_display_hz = 0.0f;
+    absolute_time_t last_metrics_time = core0_start_time;
+    
     // Core 0 main loop: Display and UI
     while (1) {
         // Read shared data from Core 1 (with mutex protection)
@@ -79,6 +88,8 @@ void display_main() {
                 local_data.shot_count = g_shared_data.shot_count;
                 local_data.moving_average_mv = g_shared_data.moving_average_mv;
                 local_data.data_updated = g_shared_data.data_updated;
+                local_data.core1_uptime_ms = g_shared_data.core1_uptime_ms;
+                local_data.core1_loop_hz = g_shared_data.core1_loop_hz;
                 g_shared_data.data_updated = false;
                 data_available = true;
             }
@@ -87,10 +98,9 @@ void display_main() {
         
         // Update display with current data
         if (data_available || (display_update_counter % 100 == 0)) {
-            // Clear display and show basic info
             display.clearDisplay();
             
-            // Display shot count prominently
+            // Display shot count
             char shot_text[32];
             snprintf(shot_text, sizeof(shot_text), "Shots: %lu", local_data.shot_count);
             display.drawString(10, 30, shot_text);
@@ -100,18 +110,26 @@ void display_main() {
             snprintf(voltage_text, sizeof(voltage_text), "%.0fmV", local_data.current_voltage_mv);
             display.drawString(10, 50, voltage_text);
             
-            // Display Core status
-            display.drawString(10, 70, "Core1: Data Acq");
-            display.drawString(10, 90, "Core0: Display");
+            // Display Core 1 frequency, padded with spaces to 3 digits before decimal
+            char core1_text[32];
+            snprintf(core1_text, sizeof(core1_text), "C1: %6.1fHz", local_data.core1_loop_hz);
+            display.drawString(10, 70, core1_text);
+            // Display Core 0 frequency, padded with spaces to 3 digits before decimal
+            char core0_text[32];
+            snprintf(core0_text, sizeof(core0_text), "C0: %6.1fHz", core0_display_hz);
+            display.drawString(10, 90, core0_text);
             
             display.display();
+            core0_display_count++;
         }
         
-        // // Periodically run the demo to show display capabilities
-        // if (display_update_counter % 1000 == 0) {
-        //     printf("Core 0: Running display demo...\n");
-        //     sh1107_demo(display, demo_delay_ms);
-        // }
+        // Update Core 0 display frequency every second
+        absolute_time_t now = get_absolute_time();
+        if (absolute_time_diff_us(last_metrics_time, now) >= 1000000) {
+            core0_display_hz = core0_display_count / 1.0f;
+            core0_display_count = 0;
+            last_metrics_time = now;
+        }
         
         display_update_counter++;
         sleep_ms(50); // 20Hz display update rate
@@ -161,6 +179,10 @@ int main() {
     printf("Core 1: Data acquisition hardware initialized\n");
     
     uint32_t loop_counter = 0;
+    absolute_time_t core1_start_time = get_absolute_time();
+    uint32_t core1_last_metrics_time_ms = 0;
+    uint32_t core1_loop_count = 0;
+    float core1_loop_hz = 0.0f;
     
     // Core 1 main loop: Data Acquisition & Processing
     while (true) {
@@ -168,10 +190,22 @@ int main() {
         uint16_t adc_raw = adc_read();
         float voltage_mv = (adc_raw * 3300.0f) / 4096.0f; // Convert to millivolts
         
+        // Calculate uptime and loop frequency every second
+        uint32_t core1_uptime_ms = absolute_time_diff_us(core1_start_time, get_absolute_time()) / 1000;
+        core1_loop_count++;
+        if (core1_last_metrics_time_ms == 0) core1_last_metrics_time_ms = core1_uptime_ms;
+        if (core1_uptime_ms - core1_last_metrics_time_ms >= 1000) {
+            core1_loop_hz = core1_loop_count / ((core1_uptime_ms - core1_last_metrics_time_ms) / 1000.0f);
+            core1_loop_count = 0;
+            core1_last_metrics_time_ms = core1_uptime_ms;
+        }
+        
         // Update shared data (with mutex protection)
         if (mutex_try_enter(&g_data_mutex, NULL)) {
             g_shared_data.current_voltage_mv = voltage_mv;
             g_shared_data.moving_average_mv = voltage_mv; // Simplified for now
+            g_shared_data.core1_uptime_ms = core1_uptime_ms;
+            g_shared_data.core1_loop_hz = core1_loop_hz;
             g_shared_data.data_updated = true;
             mutex_exit(&g_data_mutex);
         }
