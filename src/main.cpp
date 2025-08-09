@@ -89,9 +89,9 @@ void display_main() {
     float core0_display_hz = 0.0f;
     absolute_time_t last_metrics_time = core0_start_time;
     
-    // Set up a repeating timer for display updates (e.g., 50ms = 20Hz)
+    // Set up a repeating timer for display updates (16.67ms = 60Hz)
     repeating_timer_t display_timer;
-    add_repeating_timer_ms(-50, display_update_timer_callback, NULL, &display_timer);
+    add_repeating_timer_ms(-17, display_update_timer_callback, NULL, &display_timer); // -17ms for ~60Hz
 
     // Core 0 main loop: Display and UI
     while (1) {
