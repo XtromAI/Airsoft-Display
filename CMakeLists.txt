@@ -84,6 +84,9 @@ target_link_libraries(airsoft-display
         hardware_timer
         hardware_watchdog
         hardware_clocks
+        hardware_adc
+        pico_multicore
+        pico_sync
         )
     # target_link_libraries(pico_examples 
     #         hardware_spi
