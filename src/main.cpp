@@ -128,9 +128,9 @@ void display_main() {
             }
             mutex_exit(&g_data_mutex);
         }
-
+        display.clearDisplay(); // Clear display buffer
         // Draw the wave animation demo (one frame per update)
-        wave_demo_frame(display);
+        // wave_demo_frame(display);
 
         // Draw temperature in bottom left
         uint8_t y = display.getHeight() - display.getFontHeight()/2;
