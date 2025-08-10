@@ -6,9 +6,9 @@ void wave_demo_frame(SH1107_Display& display) {
     const uint8_t w = display.getWidth();
     const uint8_t h = display.getHeight();
     const float pi = 3.14159265f;
-    const float speed = 0.3f; // phase increment per frame
-    const float amplitude = h / 3.0f;
-    const float y_center = h / 2.0f;
+    const float speed = 0.9f; // phase increment per frame
+    const float amplitude = h / 10.0f;
+    const float y_center = h / 10.0f;
 
     display.clearDisplay();
     int prev_x = 0;
