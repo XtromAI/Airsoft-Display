@@ -1,12 +1,9 @@
 
 
+
 #include "temperature.h"
-#include <cstdio>
-#include <cmath>
 #include <limits>
-#include "pico/stdlib.h"
 #include "hardware/adc.h"
-#include "pico/time.h"
 
 char Temperature::formatted_buffer[8] = {0};
 
@@ -14,6 +11,7 @@ Temperature::Temperature() : cached_raw_temperature(0.0f), last_formatted_raw_te
     init_adc();
 }
 
+// Initialize ADC hardware for onboard temperature sensor
 void Temperature::init_adc() {
     adc_init();
     adc_set_temp_sensor_enabled(true);

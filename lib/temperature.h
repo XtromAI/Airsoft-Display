@@ -1,25 +1,30 @@
 
-#ifndef TEMPERATURE_H
-#define TEMPERATURE_H
 
-#include <string>
+#pragma once
 
 
+
+
+// Temperature sensor interface for reading and formatting temperature values
 class Temperature {
 public:
 	Temperature();
+	// Returns formatted temperature string (e.g., "23.1 C")
 	inline const char* get_formatted_temperature();
+	// Returns the latest raw temperature value in Celsius
 	inline float get_raw_temperature();
 private:
-	static constexpr float conversion_factor = 3.3f / (1 << 12);
-	static constexpr float base_temp = 27.0f;
-	static constexpr float v_at_base = 0.706f;
-	static constexpr float temp_slope = 0.001721f;
+	// Conversion constants for temperature calculation
+	static constexpr float kConversionFactor = 3.3f / (1 << 12);
+	static constexpr float kBaseTemp = 27.0f;
+	static constexpr float kVAtBase = 0.706f;
+	static constexpr float kTempSlope = 0.001721f;
 	float cached_raw_temperature;
 	float last_formatted_raw_temperature;
 	uint32_t last_update_ms;
 	void init_adc();
 	static char formatted_buffer[8];
+	static_assert(sizeof(formatted_buffer) >= 8, "formatted_buffer must be at least 8 bytes for temperature string");
 };
 
 // Inline implementations for efficiency
@@ -29,9 +34,8 @@ inline float Temperature::get_raw_temperature() {
 		return cached_raw_temperature;
 	}
 	uint16_t raw = adc_read();
-	float voltage = raw * conversion_factor;
-	// Optionally, replace with fixed-point math if needed for further optimization
-	float temperature = base_temp - (voltage - v_at_base) / temp_slope;
+			float voltage = raw * kConversionFactor;
+			float temperature = kBaseTemp - (voltage - kVAtBase) / kTempSlope;
 	cached_raw_temperature = temperature;
 	last_update_ms = now_ms;
 	return cached_raw_temperature;
@@ -46,4 +50,4 @@ inline const char* Temperature::get_formatted_temperature() {
 	return formatted_buffer;
 }
 
-#endif // TEMPERATURE_H
+
