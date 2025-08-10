@@ -49,6 +49,8 @@ private:
     void spi_write_data_buffer(uint8_t* data, size_t len);
 
 public:
+    // Getter for current font
+    const BitmapFont* getCurrentFont() const { return currentFont; }
     SH1107_Display(spi_inst_t* spi_inst, uint8_t cs, uint8_t dc, uint8_t reset, uint8_t w = 128, uint8_t h = 128);
     ~SH1107_Display();
 

@@ -41,6 +41,7 @@ add_executable(airsoft-display
     lib/sh1107-pico/src/font16x16.cpp
     lib/sh1107-pico/src/sh1107_demo.cpp
     lib/sh1107-pico/src/wave_demo.cpp
+    lib/temperature.cpp
 )
     # add_executable(pico_examples pico_examples.cpp)
 
@@ -66,10 +67,11 @@ target_link_libraries(airsoft-display
     #         pico_stdlib)
 
 target_include_directories(airsoft-display PRIVATE
-        ${CMAKE_CURRENT_LIST_DIR}
-        ${CMAKE_CURRENT_BINARY_DIR}
-        src
-        lib/sh1107-pico/src
+    ${CMAKE_CURRENT_LIST_DIR}
+    ${CMAKE_CURRENT_BINARY_DIR}
+    src
+    lib
+    lib/sh1107-pico/src
 )
     # target_include_directories(pico_examples PRIVATE
     #         ${CMAKE_CURRENT_LIST_DIR}

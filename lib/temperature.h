@@ -1,5 +1,8 @@
+
 #pragma once
 #include "pico/time.h" // Added for get_absolute_time()
+#include <cstdio>
+#include "hardware/adc.h"
 
 // Temperature sensor interface for reading and formatting temperature values
 class Temperature {
