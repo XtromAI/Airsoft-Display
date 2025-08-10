@@ -67,7 +67,7 @@ inline const char* Temperature::get_formatted_temperature() {
 		unit_str = "F";
 	}
 	if (display_temp != last_formatted_raw_temperature) {
-		snprintf(formatted_buffer, sizeof(formatted_buffer), "%.1f %s", display_temp, unit_str);
+			snprintf(formatted_buffer, sizeof(formatted_buffer), "%.1f\x7F%s", display_temp, unit_str);
 		last_formatted_raw_temperature = display_temp;
 	}
 	return formatted_buffer;
