@@ -18,5 +18,4 @@ Temperature::Temperature(TemperatureUnit unit)
 void Temperature::init_adc() {
     adc_init();
     adc_set_temp_sensor_enabled(true);
-    adc_select_input(4); // Channel 4 is the onboard temp sensor
 }

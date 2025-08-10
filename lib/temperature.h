@@ -44,6 +44,7 @@ inline float Temperature::get_raw_temperature() {
 	if ((now_ms - last_update_ms) < 1000) {
 		return cached_raw_temperature;
 	}
+	adc_select_input(4); // Ensure correct ADC channel for temperature sensor
 	uint16_t raw = adc_read();
 	float voltage = raw * kConversionFactor;
 	float temperature = kBaseTemp - (voltage - kVAtBase) / kTempSlope;
