@@ -49,6 +49,8 @@ private:
     void spi_write_data_buffer(uint8_t* data, size_t len);
 
 public:
+    // Getter for current font
+    const BitmapFont* getCurrentFont() const { return currentFont; }
     SH1107_Display(spi_inst_t* spi_inst, uint8_t cs, uint8_t dc, uint8_t reset, uint8_t w = 128, uint8_t h = 128);
     ~SH1107_Display();
 
@@ -81,6 +83,11 @@ public:
     // Public getters for width and height
     inline uint8_t getWidth() const { return width; }
     inline uint8_t getHeight() const { return height; }
+
+    // Getter for current font height
+    inline uint8_t getFontHeight() const {
+        return currentFont ? currentFont->height : 0;
+    }
 };
 
 #endif // SH1107_DRIVER_H

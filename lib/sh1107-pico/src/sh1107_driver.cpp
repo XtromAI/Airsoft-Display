@@ -1,4 +1,3 @@
-
 // SH1107 driver implementation
 #include "sh1107_driver.h"
 #include <cstdint>

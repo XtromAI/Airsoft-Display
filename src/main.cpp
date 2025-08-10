@@ -13,6 +13,7 @@
 #include "font8x8.h"
 #include "font16x16.h"
 #include "sh1107_demo.h"
+#include "temperature.h"
 #include "wave_demo.h"
 
 // --- Pin assignments ---
@@ -68,8 +69,13 @@ void display_main() {
     gpio_set_function(PIN_SPI_SCK, GPIO_FUNC_SPI);
     gpio_set_function(PIN_SPI_MOSI, GPIO_FUNC_SPI);
 
+
     // Create display object
     SH1107_Display display(spi1, PIN_SPI_CS, PIN_SPI_DC, PIN_SPI_RESET, 128, 128);
+
+    // Create temperature object in Fahrenheit mode
+    Temperature temp_sensor(TemperatureUnit::Fahrenheit);
+    temp_sensor.set_calibration_offset(4.0f); // todo: make this part of user settings
 
     // Initialize display
     if (!display.begin()) {
@@ -123,9 +129,16 @@ void display_main() {
             }
             mutex_exit(&g_data_mutex);
         }
-
+        display.clearDisplay(); // Clear display buffer
         // Draw the wave animation demo (one frame per update)
-        wave_demo_frame(display);
+        // wave_demo_frame(display);
+
+        // Draw temperature in bottom left
+        uint8_t y = display.getHeight() - display.getFontHeight()/2;
+        display.drawString(0, y, temp_sensor.get_formatted_temperature());
+
+        display.display();
+
         core0_display_count++;
 
         // Update Core 0 display frequency every second
