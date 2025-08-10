@@ -1,6 +1,4 @@
 
-
-
 #include "temperature.h"
 #include <limits>
 #include "hardware/adc.h"
