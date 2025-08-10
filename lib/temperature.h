@@ -29,9 +29,13 @@ private:
 	float last_formatted_raw_temperature;
 	uint32_t last_update_ms;
 	TemperatureUnit unit_; // Store the selected unit
+	float calibration_offset_ = 0.0f; // Default calibration offset
 	void init_adc();
 	static char formatted_buffer[8];
 	static_assert(sizeof(formatted_buffer) >= 8, "formatted_buffer must be at least 8 bytes for temperature string");
+public:
+	// Setter for calibration offset
+	void set_calibration_offset(float offset) { calibration_offset_ = offset; }
 };
 
 // Inline implementations for efficiency
@@ -41,8 +45,9 @@ inline float Temperature::get_raw_temperature() {
 		return cached_raw_temperature;
 	}
 	uint16_t raw = adc_read();
-			float voltage = raw * kConversionFactor;
-			float temperature = kBaseTemp - (voltage - kVAtBase) / kTempSlope;
+	float voltage = raw * kConversionFactor;
+	float temperature = kBaseTemp - (voltage - kVAtBase) / kTempSlope;
+	temperature += calibration_offset_;
 	cached_raw_temperature = temperature;
 	last_update_ms = now_ms;
 	return cached_raw_temperature;

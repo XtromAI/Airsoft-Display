@@ -75,6 +75,7 @@ void display_main() {
 
     // Create temperature object in Fahrenheit mode
     Temperature temp_sensor(TemperatureUnit::Fahrenheit);
+    temp_sensor.set_calibration_offset(4.0f); // todo: make this part of user settings
 
     // Initialize display
     if (!display.begin()) {
