@@ -73,8 +73,8 @@ void display_main() {
     // Create display object
     SH1107_Display display(spi1, PIN_SPI_CS, PIN_SPI_DC, PIN_SPI_RESET, 128, 128);
 
-    // Create temperature object
-    Temperature temp_sensor;
+    // Create temperature object in Fahrenheit mode
+    Temperature temp_sensor(TemperatureUnit::Fahrenheit);
 
     // Initialize display
     if (!display.begin()) {

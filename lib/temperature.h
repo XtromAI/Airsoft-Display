@@ -4,10 +4,17 @@
 #include <cstdio>
 #include "hardware/adc.h"
 
+// Enum for temperature units
+enum class TemperatureUnit {
+	Celsius,
+	Fahrenheit
+};
+
 // Temperature sensor interface for reading and formatting temperature values
 class Temperature {
 public:
-	Temperature();
+	// Optional unit parameter, defaults to Celsius
+	Temperature(TemperatureUnit unit = TemperatureUnit::Celsius);
 	// Returns formatted temperature string (e.g., "23.1 C")
 	inline const char* get_formatted_temperature();
 	// Returns the latest raw temperature value in Celsius
@@ -21,6 +28,7 @@ private:
 	float cached_raw_temperature;
 	float last_formatted_raw_temperature;
 	uint32_t last_update_ms;
+	TemperatureUnit unit_; // Store the selected unit
 	void init_adc();
 	static char formatted_buffer[8];
 	static_assert(sizeof(formatted_buffer) >= 8, "formatted_buffer must be at least 8 bytes for temperature string");
@@ -40,11 +48,21 @@ inline float Temperature::get_raw_temperature() {
 	return cached_raw_temperature;
 }
 
+inline float celsius_to_fahrenheit(float celsius) {
+	return celsius * 9.0f / 5.0f + 32.0f;
+}
+
 inline const char* Temperature::get_formatted_temperature() {
 	float temperature = get_raw_temperature();
-	if (temperature != last_formatted_raw_temperature) {
-		snprintf(formatted_buffer, sizeof(formatted_buffer), "%.1f C", temperature);
-		last_formatted_raw_temperature = temperature;
+	float display_temp = temperature;
+	const char* unit_str = "C";
+	if (unit_ == TemperatureUnit::Fahrenheit) {
+		display_temp = celsius_to_fahrenheit(temperature);
+		unit_str = "F";
+	}
+	if (display_temp != last_formatted_raw_temperature) {
+		snprintf(formatted_buffer, sizeof(formatted_buffer), "%.1f %s", display_temp, unit_str);
+		last_formatted_raw_temperature = display_temp;
 	}
 	return formatted_buffer;
 }

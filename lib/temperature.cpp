@@ -5,7 +5,12 @@
 
 char Temperature::formatted_buffer[8] = {0};
 
-Temperature::Temperature() : cached_raw_temperature(0.0f), last_formatted_raw_temperature(std::numeric_limits<float>::quiet_NaN()), last_update_ms(0) {
+Temperature::Temperature(TemperatureUnit unit)
+    : cached_raw_temperature(0.0f),
+      last_formatted_raw_temperature(std::numeric_limits<float>::quiet_NaN()),
+      last_update_ms(0),
+      unit_(unit)
+{
     init_adc();
 }
 
