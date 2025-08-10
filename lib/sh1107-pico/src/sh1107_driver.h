@@ -83,6 +83,11 @@ public:
     // Public getters for width and height
     inline uint8_t getWidth() const { return width; }
     inline uint8_t getHeight() const { return height; }
+
+    // Getter for current font height
+    inline uint8_t getFontHeight() const {
+        return currentFont ? currentFont->height : 0;
+    }
 };
 
 #endif // SH1107_DRIVER_H

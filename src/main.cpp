@@ -133,12 +133,8 @@ void display_main() {
         wave_demo_frame(display);
 
         // Draw temperature in bottom left
-        const char* temp_str = temp_sensor.get_formatted_temperature();
-        if (const BitmapFont* font = display.getCurrentFont()) {
-            uint8_t font_height = font->height;
-            uint8_t y = display.getHeight() - font_height;
-            display.drawString(0, y, temp_str);
-        }
+        uint8_t y = display.getHeight() - display.getFontHeight()/2;
+        display.drawString(0, y, temp_sensor.get_formatted_temperature());
 
         display.display();
 
