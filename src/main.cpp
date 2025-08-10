@@ -82,7 +82,8 @@ void display_main() {
         printf("Core 0: Display initialization failed!\n");
         while (1) sleep_ms(1000);
     }
-    
+    // Set display to maximum brightness
+    display.setContrast(0xFF);
 
     printf("Core 0: Display initialized successfully!\n");
 
