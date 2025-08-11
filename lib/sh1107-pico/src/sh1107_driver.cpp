@@ -30,7 +30,7 @@ SH1107_Display::~SH1107_Display() {
 // ==================================================
 
 bool SH1107_Display::begin() {
-    spi_init(spi, 10000000);
+    spi_init(spi, 10000000); // todo create constant
     spi_set_format(spi, 8, SPI_CPOL_1, SPI_CPHA_1, SPI_MSB_FIRST);
     gpio_init(cs_pin);
     gpio_set_dir(cs_pin, GPIO_OUT);
@@ -51,7 +51,7 @@ bool SH1107_Display::begin() {
     spi_write_command(SH1107_MULTIPLEXRATIO_128);
     spi_write_command(SH1107_MEMORYMODE);
     spi_write_command(SH1107_MEMORYMODE_PAGE);
-    spi_write_command(SH1107_PAGEADDR | 0x00);
+    spi_write_command(SH1107_PAGEADDR | 0x00); // todo what is this pipe
     spi_write_command(SH1107_DCDC);
     spi_write_command(SH1107_DCDC_ENABLE);
     spi_write_command(SH1107_SETDISPLAYCLOCKDIV);
@@ -141,7 +141,7 @@ void SH1107_Display::spi_write_data_buffer(uint8_t* data, size_t len) {
 // ==================================================
 
 void SH1107_Display::setPixel(uint8_t x, uint8_t y, bool color /* = true */) {
-    if (x >= width || y >= height) return;
+    if (x >= width || y >= height) return; // todo clamp to avoid negative also 
     uint16_t index = x + (y / 8) * width;
     uint8_t bit = y % 8;
     
@@ -176,6 +176,7 @@ void SH1107_Display::drawLine(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1, bo
     }
 }
 
+// todo pass in center
 void SH1107_Display::drawRect(uint8_t x, uint8_t y, uint8_t w, uint8_t h, bool color) {
     drawLine(x, y, x + w - 1, y, color);
     drawLine(x, y + h - 1, x + w - 1, y + h - 1, color);
@@ -183,6 +184,7 @@ void SH1107_Display::drawRect(uint8_t x, uint8_t y, uint8_t w, uint8_t h, bool c
     drawLine(x + w - 1, y, x + w - 1, y + h - 1, color);
 }
 
+// todo pass in center
 void SH1107_Display::fillRect(uint8_t x, uint8_t y, uint8_t w, uint8_t h, bool color) {
     for (uint8_t i = x; i < x + w; i++) {
         for (uint8_t j = y; j < y + h; j++) {
@@ -191,6 +193,8 @@ void SH1107_Display::fillRect(uint8_t x, uint8_t y, uint8_t w, uint8_t h, bool c
     }
 }
 
+
+// todo separate into drawCircle and fillCircle 
 void SH1107_Display::drawCircle(uint8_t x0, uint8_t y0, uint8_t radius, bool color, bool filled) {
     if (!filled) {
         // Classic midpoint circle algorithm, diameter = 2*radius (not 2*radius+1)
@@ -277,6 +281,7 @@ void SH1107_Display::drawString(uint8_t x, uint8_t y, const char* str) {
     }
 }
 
+// todo move up logically before drawString 
 // Draw a single character at (x, y) using the current font.
 void SH1107_Display::drawChar(uint8_t x, uint8_t y, char c) {
     if (!currentFont) return; // Safety check
