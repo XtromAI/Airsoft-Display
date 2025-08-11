@@ -48,18 +48,18 @@ bool SH1107_Display::begin() {
     sleep_ms(20);
     spi_write_command(SH1107_DISPLAYOFF);
     spi_write_command(SH1107_SETMULTIPLEX);
-    spi_write_command(0x7F);
-    spi_write_command(0x20);
-    spi_write_command(0x00);
+    spi_write_command(SH1107_MULTIPLEXRATIO_128);
+    spi_write_command(SH1107_MEMORYMODE);
+    spi_write_command(SH1107_MEMORYMODE_PAGE);
     spi_write_command(SH1107_PAGEADDR | 0x00);
     spi_write_command(SH1107_DCDC);
-    spi_write_command(0x81);
+    spi_write_command(SH1107_DCDC_ENABLE);
     spi_write_command(SH1107_SETDISPLAYCLOCKDIV);
-    spi_write_command(0x50);
+    spi_write_command(SH1107_CLOCKDIV_DEFAULT);
     spi_write_command(SH1107_SETVCOMDETECT);
-    spi_write_command(0x35);
+    spi_write_command(SH1107_VCOMDESELECT_LEVEL);
     spi_write_command(SH1107_SETPRECHARGE);
-    spi_write_command(0x22);
+    spi_write_command(SH1107_PRECHARGE_DEFAULT);
     spi_write_command(SH1107_SETCONTRAST);
     spi_write_command(0x00);
     spi_write_command(SH1107_DISPLAYNORMAL);
@@ -101,12 +101,12 @@ void SH1107_Display::displayOn(bool on) {
 
 void SH1107_Display::setDisplayStartLine(uint8_t line) {
     spi_write_command(SH1107_SETDISPLAYSTARTLINE);
-    spi_write_command(line & 0x7F);
+    spi_write_command(line & SH1107_STARTLINE_MASK);
 }
 
 void SH1107_Display::flip(bool horizontal, bool vertical) {
-    uint8_t remap = horizontal ? 0x01 : 0x00;
-    uint8_t direction = vertical ? 0x08 : 0x00;
+    uint8_t remap = horizontal ? SH1107_SEGREMAP_HORIZONTAL : 0x00;
+    uint8_t direction = vertical ? SH1107_COMSCAN_VERTICAL : 0x00;
     spi_write_command(SH1107_SEGREMAP | remap);
     spi_write_command(SH1107_COMSCANINC | direction);
 }
@@ -235,45 +235,6 @@ void SH1107_Display::drawCircle(uint8_t x0, uint8_t y0, uint8_t radius, bool col
             drawLine(x0 + y, y0 - x, x0 + y, y0 + x, color);
             drawLine(x0 - x, y0 - y, x0 - x, y0 + y, color);
             drawLine(x0 - y, y0 - x, x0 - y, y0 + x, color);
-        }
-    }
-}
-
-void SH1107_Display::drawTriangle(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2, bool color, bool filled) {
-    if (!filled) {
-        drawLine(x0, y0, x1, y1, color);
-        drawLine(x1, y1, x2, y2, color);
-        drawLine(x2, y2, x0, y0, color);
-    } else {
-        if (y0 > y1) { uint8_t temp; temp = y0; y0 = y1; y1 = temp; temp = x0; x0 = x1; x1 = temp; }
-        if (y1 > y2) { uint8_t temp; temp = y2; y2 = y1; y1 = temp; temp = x2; x2 = x1; x1 = temp; }
-        if (y0 > y1) { uint8_t temp; temp = y0; y0 = y1; y1 = temp; temp = x0; x0 = x1; x1 = temp; }
-        if (y0 == y2) {
-            uint8_t a = x0, b = x0;
-            if (x1 < a) a = x1; else if (x1 > b) b = x1;
-            if (x2 < a) a = x2; else if (x2 > b) b = x2;
-            drawLine(a, y0, b, y0, color);
-            return;
-        }
-        int dx01 = x1 - x0, dy01 = y1 - y0, dx02 = x2 - x0, dy02 = y2 - y0, dx12 = x2 - x1, dy12 = y2 - y1;
-        if (dy01 == 0) dy01 = 1;
-        if (dy02 == 0) dy02 = 1;
-        if (dy12 == 0) dy12 = 1;
-        int sa = 0, sb = 0, y = y0, last = (y0 == y1) ? y1 - 1 : y1;
-        while (y <= last) {
-            int a = x0 + sa / dy01, b = x0 + sb / dy02;
-            sa += dx01; sb += dx02;
-            if (a > b) { int temp = a; a = b; b = temp; }
-            drawLine(a, y, b, y, color);
-            y++;
-        }
-        sa = dx12 * (y - y1); sb = dx02 * (y - y0);
-        while (y <= y2) {
-            int a = x1 + sa / dy12, b = x0 + sb / dy02;
-            sa += dx12; sb += dx02;
-            if (a > b) { int temp = a; a = b; b = temp; }
-            drawLine(a, y, b, y, color);
-            y++;
         }
     }
 }
