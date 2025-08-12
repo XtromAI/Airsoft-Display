@@ -28,10 +28,6 @@
 // ADC pin for battery monitoring
 #define PIN_ADC_BATTERY 26  // GP26 (ADC0)
 
-// Button pins
-#define PIN_BUTTON_OUT  9   // GP9 (drives low)
-#define PIN_BUTTON_IN   10  // GP10 (input with pull-up)
-
 // Status LED (onboard)
 #define PIN_STATUS_LED  25  // GP25 (onboard LED)
 
@@ -212,15 +208,6 @@ int main() {
     adc_sampler.start();
     printf("Core 1: ADC sampler initialized at 10kHz\n");
     
-    // Initialize button pins
-    gpio_init(PIN_BUTTON_OUT);
-    gpio_set_dir(PIN_BUTTON_OUT, GPIO_OUT);
-    gpio_put(PIN_BUTTON_OUT, 0); // Drive low
-    
-    gpio_init(PIN_BUTTON_IN);
-    gpio_set_dir(PIN_BUTTON_IN, GPIO_IN);
-    gpio_pull_up(PIN_BUTTON_IN);
-    
     // Initialize status LED
     gpio_init(PIN_STATUS_LED);
     gpio_set_dir(PIN_STATUS_LED, GPIO_OUT);
@@ -280,15 +267,6 @@ int main() {
         // Blink status LED to show Core 1 is running
         gpio_put(PIN_STATUS_LED, (loop_counter / 100) & 1);
         loop_counter++;
-        
-        // Check button for shot counter reset (simplified logic)
-        if (!gpio_get(PIN_BUTTON_IN)) {
-            if (mutex_try_enter(&g_data_mutex, NULL)) {
-                g_shared_data.shot_count = 0;
-                mutex_exit(&g_data_mutex);
-            }
-            sleep_ms(500); // Simple debounce
-        }
         
     // Kick the watchdog periodically
     watchdog_update();
