@@ -202,11 +202,11 @@ int main() {
     // Core 1: Initialize data acquisition hardware
     printf("Core 1: Starting data acquisition and processing...\n");
     
-    // Initialize ADC sampler with 10kHz sampling rate on ADC0 (PIN_ADC_BATTERY)
+    // Initialize ADC sampler with 10Hz sampling rate on ADC0 (PIN_ADC_BATTERY)
     ADCSampler adc_sampler(0); // ADC0 (GP26)
-    adc_sampler.init(10000); // 10kHz sampling rate
+    adc_sampler.init(10); // 10Hz sampling rate (much slower for testing)
     adc_sampler.start();
-    printf("Core 1: ADC sampler initialized at 10kHz\n");
+    printf("Core 1: ADC sampler initialized at 10Hz\n");
     
     // Initialize status LED
     gpio_init(PIN_STATUS_LED);
