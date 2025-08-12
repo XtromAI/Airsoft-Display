@@ -31,10 +31,27 @@
 #define SH1107_SETVCOMDETECT    0xDB
 #define SH1107_SETDISPLAYSTARTLINE 0xDC  // Python reference uses this
 
+// Common parameter values
+#define SH1107_MEMORYMODE_PAGE      0x00  // Page addressing mode
+#define SH1107_DCDC_ENABLE          0x81  // Enable DC-DC converter
+#define SH1107_VCOMDESELECT_LEVEL   0x35  // VCOM deselect level
+#define SH1107_MULTIPLEXRATIO_128   0x7F  // Multiplex ratio for 128 height displays
+#define SH1107_CLOCKDIV_DEFAULT     0x50  // Default clock divide ratio
+#define SH1107_PRECHARGE_DEFAULT    0x22  // Default precharge period
+
+// Bit mask values for configuration
+#define SH1107_SEGREMAP_HORIZONTAL  0x01  // Horizontal flip bit
+#define SH1107_COMSCAN_VERTICAL     0x08  // Vertical flip bit
+#define SH1107_STARTLINE_MASK       0x7F  // Start line mask (0-127)
+
 
 class SH1107_Display {
 private:
     spi_inst_t* spi;
+    static constexpr uint8_t DEFAULT_CHAR_SPACING = 0;
+    static constexpr uint8_t DEFAULT_WIDTH = 128;
+    static constexpr uint8_t DEFAULT_HEIGHT = 128;
+    uint8_t charSpacing = DEFAULT_CHAR_SPACING; // Character spacing in pixels (default 0)
     uint8_t cs_pin;
     uint8_t dc_pin;
     uint8_t reset_pin;
@@ -42,7 +59,6 @@ private:
     uint8_t height;
     uint8_t* buffer;
     const BitmapFont* currentFont; // Pointer to current font
-    uint8_t charSpacing = 0; // Character spacing in pixels (default 0)
 
     void spi_write_command(uint8_t cmd);
     void spi_write_data(uint8_t data);
@@ -51,7 +67,7 @@ private:
 public:
     // Getter for current font
     const BitmapFont* getCurrentFont() const { return currentFont; }
-    SH1107_Display(spi_inst_t* spi_inst, uint8_t cs, uint8_t dc, uint8_t reset, uint8_t w = 128, uint8_t h = 128);
+    SH1107_Display(spi_inst_t* spi_inst, uint8_t cs, uint8_t dc, uint8_t reset, uint8_t w = DEFAULT_WIDTH, uint8_t h = DEFAULT_HEIGHT);
     ~SH1107_Display();
 
     void setFont(const BitmapFont* font); // Set the current font
