@@ -42,6 +42,7 @@ void ADCSampler::handle_sample() {
 
 void ADCSampler::init(uint32_t sample_rate_hz) {
     adc_init();
+    adc_gpio_init(26 + input_channel); // Configure GPIO pin for ADC (GP26=ADC0, GP27=ADC1, etc.)
     adc_select_input(input_channel); // Configurable ADC input
     adc_fifo_setup(false, false, 0, false, false);
     adc_run(true);

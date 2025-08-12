@@ -12,3 +12,4 @@ when placing headers, use the following format:
 // ==================================================
 </header-format>
 
+use windows powershell commands in the terminal

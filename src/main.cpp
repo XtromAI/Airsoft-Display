@@ -15,6 +15,7 @@
 #include "sh1107_demo.h"
 #include "temperature.h"
 #include "wave_demo.h"
+#include "adc_sampler.h"
 
 // --- Pin assignments ---
 // Display pins (SPI1)
@@ -178,10 +179,11 @@ int main() {
     // Core 1: Initialize data acquisition hardware
     printf("Core 1: Starting data acquisition and processing...\n");
     
-    // Initialize ADC for battery monitoring
-    adc_init();
-    adc_gpio_init(PIN_ADC_BATTERY);
-    adc_select_input(0); // ADC0 (GP26)
+    // Initialize ADC sampler with 10kHz sampling rate on ADC0 (PIN_ADC_BATTERY)
+    ADCSampler adc_sampler(0); // ADC0 (GP26)
+    adc_sampler.init(10000); // 10kHz sampling rate
+    adc_sampler.start();
+    printf("Core 1: ADC sampler initialized at 10kHz\n");
     
     // Initialize button pins
     gpio_init(PIN_BUTTON_OUT);
@@ -211,9 +213,14 @@ int main() {
     
     // Core 1 main loop: Data Acquisition & Processing
     while (true) {
-        // Simple ADC reading for now (will be replaced with DMA-based sampling)
-        uint16_t adc_raw = adc_read();
-        float voltage_mv = (adc_raw * 3300.0f) / 4096.0f; // Convert to millivolts
+        // Get latest ADC sample from high-frequency sampler
+        uint16_t adc_raw;
+        float voltage_mv;
+        if (adc_sampler.get_sample(&adc_raw)) {
+            voltage_mv = (adc_raw * 3300.0f) / 4096.0f; // Convert to millivolts
+        } else {
+            voltage_mv = 0.0f; // No sample available
+        }
         
         // Calculate uptime and loop frequency every second
         uint32_t core1_uptime_ms = absolute_time_diff_us(core1_start_time, get_absolute_time()) / 1000;
