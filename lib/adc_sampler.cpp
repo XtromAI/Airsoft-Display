@@ -9,7 +9,7 @@
 // Constructor & Destructor
 // ==================================================
 
-ADCSampler::ADCSampler(uint input_channel)
+ADCSampler::ADCSampler(uint32_t input_channel)
     : head(0), tail(0), sample_interval_us(100), alarm_id(0), sampling(false), input_channel(input_channel) {
     // Zero buffer
     for (uint32_t i = 0; i < BUFFER_SIZE; ++i) buffer[i] = 0;
@@ -49,7 +49,7 @@ void ADCSampler::init(uint32_t sample_rate_hz) {
     sample_interval_us = 1000000 / sample_rate_hz;
 }
 
-void ADCSampler::set_channel(uint input_channel) {
+void ADCSampler::set_channel(uint32_t input_channel) {
     this->input_channel = input_channel;
     adc_select_input(input_channel);
 }

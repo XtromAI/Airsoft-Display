@@ -13,11 +13,11 @@
 
 class ADCSampler {
 public:
-    ADCSampler(uint input_channel = 0);
+    ADCSampler(uint32_t input_channel = 0);
     ~ADCSampler();
 
     void init(uint32_t sample_rate_hz);
-    void set_channel(uint input_channel);
+    void set_channel(uint32_t input_channel);
     void start();
     void stop();
     bool get_sample(uint16_t* out_sample);
@@ -33,7 +33,7 @@ private:
     uint32_t sample_interval_us;
     alarm_id_t alarm_id;
     volatile bool sampling;
-    uint input_channel;
+    uint32_t input_channel;
 };
 
 #endif // ADC_SAMPLER_H

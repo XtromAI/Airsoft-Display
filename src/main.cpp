@@ -44,6 +44,8 @@ typedef struct {
     // Live core metrics
     uint32_t core1_uptime_ms;
     float core1_loop_hz;
+    uint32_t debug_counter; // Debug: increments in Core 1 loop
+    uint32_t fallback_counter; // Debug: always increments regardless of mutex
 } shared_data_t;
 
 // Global shared data and mutex
@@ -117,6 +119,10 @@ void display_main() {
 
         // Read shared data from Core 1 (with mutex protection)
         bool data_available = false;
+        
+        // Always read fallback counter (no mutex needed for atomic read)
+        local_data.fallback_counter = g_shared_data.fallback_counter;
+        
         if (mutex_try_enter(&g_data_mutex, NULL)) {
             if (g_shared_data.data_updated) {
                 // Copy volatile data to local structure field by field
@@ -126,6 +132,7 @@ void display_main() {
                 local_data.data_updated = g_shared_data.data_updated;
                 local_data.core1_uptime_ms = g_shared_data.core1_uptime_ms;
                 local_data.core1_loop_hz = g_shared_data.core1_loop_hz;
+                local_data.debug_counter = g_shared_data.debug_counter;
                 g_shared_data.data_updated = false;
                 data_available = true;
             }
@@ -135,9 +142,29 @@ void display_main() {
         // Draw the wave animation demo (one frame per update)
         // wave_demo_frame(display);
 
-        // Draw temperature in bottom left
-        uint8_t y = display.getHeight() - display.getFontHeight()/2;
-        display.drawString(0, y, temp_sensor.get_formatted_temperature());
+        // ==================================================
+        // Sampler Status Message (Top Row)
+        // ==================================================
+        char status_msg[64];
+        if (local_data.core1_loop_hz > 1.0f) {
+            snprintf(status_msg, sizeof(status_msg), "%.0fHz D:%lu F:%lu", local_data.core1_loop_hz, local_data.debug_counter, local_data.fallback_counter);
+        } else {
+            snprintf(status_msg, sizeof(status_msg), "D:%lu F:%lu", local_data.debug_counter, local_data.fallback_counter);
+        }
+        display.drawString(0, 0, status_msg);
+
+        // ==================================================
+        // Temperature (Bottom Left)
+        // ==================================================
+        uint8_t temp_y = display.getHeight() - display.getFontHeight()/2;
+        display.drawString(0, temp_y, temp_sensor.get_formatted_temperature());
+
+        // ==================================================
+        // Voltage (Center)
+        // ==================================================
+        char voltage_str[32];
+        snprintf(voltage_str, sizeof(voltage_str), "%.2f mV", local_data.current_voltage_mv);
+        display.drawString(display.centerx(), display.centery(), voltage_str);
 
         display.display();
 
@@ -238,9 +265,17 @@ int main() {
             g_shared_data.moving_average_mv = voltage_mv; // Simplified for now
             g_shared_data.core1_uptime_ms = core1_uptime_ms;
             g_shared_data.core1_loop_hz = core1_loop_hz;
+            g_shared_data.debug_counter++;
             g_shared_data.data_updated = true;
             mutex_exit(&g_data_mutex);
         }
+        
+        // Debug: Force increment fallback counter even if mutex fails
+        static uint32_t fallback_counter = 0;
+        fallback_counter++;
+        
+        // Update fallback counter in shared data (using atomic write)
+        g_shared_data.fallback_counter = fallback_counter;
         
         // Blink status LED to show Core 1 is running
         gpio_put(PIN_STATUS_LED, (loop_counter / 100) & 1);
