@@ -2,6 +2,13 @@
 
 # SH1107 Driver Refactor & Enhancement Plan
 
+> **STATUS:** Future optimizations - not yet implemented. Current driver uses standard hardware SPI.  
+> See [PROJECT-STATUS.md](PROJECT-STATUS.md) for current implementation details.
+
+## Overview
+
+This document outlines potential performance optimizations for the custom SH1107 display driver. These are **future enhancements** to be implemented after core functionality (shot detection, ADC sampling) is complete.
+
 ## 1. PIO for Display Transfer
 
 **Goal:** Offload display signaling to the RP2040’s PIO for precise timing and to free CPU resources.

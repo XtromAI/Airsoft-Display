@@ -1,0 +1,52 @@
+# Archive - Historical Documentation
+
+This folder contains archived documentation from the development process that is no longer actively used but preserved for historical reference.
+
+## What's Archived Here
+
+### Display Library Research (August 2025)
+
+During initial development, extensive research was conducted on using third-party display libraries (U8g2, Adafruit) for the SH1107 OLED display. After multiple integration attempts failed to produce a working display (only noise/static), the decision was made to write a custom driver instead.
+
+**Files:**
+- `display-driver-research.md` (427 lines) - U8g2 integration research and implementation guide
+- `display-library-comparison.md` (226 lines) - Comparative analysis of display library options
+
+**Timeline:**
+- Aug 3, 2025: U8g2 library integration attempt
+- Aug 4, 2025 (8:53 PM): Final troubleshooting, created research docs
+- Aug 4, 2025 (9:17 PM): Custom driver working successfully
+
+### Font Implementation Decision (August 2025)
+
+Similar to the display driver, attempts to use U8g2's compressed font format proved too complex. A custom row-major bitmap font format was created instead.
+
+**Files:**
+- `FONT-DECISION.md` - Why custom font format was chosen over U8g2 fonts
+
+**Timeline:**
+- Aug 5, 2025: Attempted U8g2 font integration
+- Aug 6, 2025: Custom 8x8 bitmap font implemented
+- Aug 6-7, 2025: Added 16x16 font and font management
+
+## Why Archive These?
+
+These documents represent:
+1. **Engineering Journey** - The troubleshooting and decision-making process
+2. **Due Diligence** - Extensive research was done before abandoning third-party libraries
+3. **Learning Experience** - Valuable insights about library integration challenges
+4. **Future Reference** - Context for why a custom driver was chosen
+
+## Current Implementation
+
+The project now uses a **custom SH1107 driver** located in `lib/sh1107-pico/` which:
+- Works reliably (unlike the U8g2 attempts)
+- Is optimized specifically for this project
+- Is based on proven MicroPython reference code
+- Requires no external library dependencies
+
+See `lib/sh1107-pico/docs/` for current driver documentation.
+
+---
+
+**Note:** These archived documents are kept as-is from their original creation date and may reference approaches or libraries that are no longer used in the project.

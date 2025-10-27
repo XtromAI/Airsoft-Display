@@ -1,5 +1,7 @@
 # Hardware Timers, Interrupts, and Display Updates on Embedded Systems
 
+> **IMPLEMENTATION STATUS:** ✅ Currently implemented - Core 0 uses a timer interrupt to set a flag, and the main loop performs display updates in normal context (not in interrupt). This follows best practices outlined below.
+
 ## Should We Use Interrupts for Display Updates?
 
 **Short answer:** No, you should not perform display updates directly inside an interrupt handler.

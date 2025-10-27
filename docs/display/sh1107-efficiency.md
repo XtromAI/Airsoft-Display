@@ -1,5 +1,8 @@
 # SH1107 Display Driver Efficiency Recommendations
 
+> **STATUS:** Reference document - These are potential optimizations to consider after core functionality is complete.  
+> See [../PROJECT-STATUS.md](../PROJECT-STATUS.md) for current implementation status.
+
 This document outlines strategies to improve the efficiency of the SH1107 display driver for the Raspberry Pi Pico Airsoft project.
 
 ## 1. Partial/Dirty Region Updates
