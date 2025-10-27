@@ -9,7 +9,7 @@
 // Constructor & Destructor
 // ==================================================
 
-ADCSampler::ADCSampler(uint input_channel)
+ADCSampler::ADCSampler(uint32_t input_channel)
     : head(0), tail(0), sample_interval_us(100), alarm_id(0), sampling(false), input_channel(input_channel) {
     // Zero buffer
     for (uint32_t i = 0; i < BUFFER_SIZE; ++i) buffer[i] = 0;
@@ -42,13 +42,14 @@ void ADCSampler::handle_sample() {
 
 void ADCSampler::init(uint32_t sample_rate_hz) {
     adc_init();
+    adc_gpio_init(26 + input_channel); // Configure GPIO pin for ADC (GP26=ADC0, GP27=ADC1, etc.)
     adc_select_input(input_channel); // Configurable ADC input
     adc_fifo_setup(false, false, 0, false, false);
     adc_run(true);
     sample_interval_us = 1000000 / sample_rate_hz;
 }
 
-void ADCSampler::set_channel(uint input_channel) {
+void ADCSampler::set_channel(uint32_t input_channel) {
     this->input_channel = input_channel;
     adc_select_input(input_channel);
 }

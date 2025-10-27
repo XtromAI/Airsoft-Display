@@ -15,6 +15,7 @@
 #include "sh1107_demo.h"
 #include "temperature.h"
 #include "wave_demo.h"
+#include "adc_sampler.h"
 
 // --- Pin assignments ---
 // Display pins (SPI1)
@@ -26,10 +27,6 @@
 
 // ADC pin for battery monitoring
 #define PIN_ADC_BATTERY 26  // GP26 (ADC0)
-
-// Button pins
-#define PIN_BUTTON_OUT  9   // GP9 (drives low)
-#define PIN_BUTTON_IN   10  // GP10 (input with pull-up)
 
 // Status LED (onboard)
 #define PIN_STATUS_LED  25  // GP25 (onboard LED)
@@ -43,6 +40,8 @@ typedef struct {
     // Live core metrics
     uint32_t core1_uptime_ms;
     float core1_loop_hz;
+    uint32_t debug_counter; // Debug: increments in Core 1 loop
+    uint32_t fallback_counter; // Debug: always increments regardless of mutex
 } shared_data_t;
 
 // Global shared data and mutex
@@ -116,6 +115,10 @@ void display_main() {
 
         // Read shared data from Core 1 (with mutex protection)
         bool data_available = false;
+        
+        // Always read fallback counter (no mutex needed for atomic read)
+        local_data.fallback_counter = g_shared_data.fallback_counter;
+        
         if (mutex_try_enter(&g_data_mutex, NULL)) {
             if (g_shared_data.data_updated) {
                 // Copy volatile data to local structure field by field
@@ -125,6 +128,7 @@ void display_main() {
                 local_data.data_updated = g_shared_data.data_updated;
                 local_data.core1_uptime_ms = g_shared_data.core1_uptime_ms;
                 local_data.core1_loop_hz = g_shared_data.core1_loop_hz;
+                local_data.debug_counter = g_shared_data.debug_counter;
                 g_shared_data.data_updated = false;
                 data_available = true;
             }
@@ -134,9 +138,29 @@ void display_main() {
         // Draw the wave animation demo (one frame per update)
         // wave_demo_frame(display);
 
-        // Draw temperature in bottom left
-        uint8_t y = display.getHeight() - display.getFontHeight()/2;
-        display.drawString(0, y, temp_sensor.get_formatted_temperature());
+        // ==================================================
+        // Sampler Status Message (Top Row)
+        // ==================================================
+        char status_msg[64];
+        if (local_data.core1_loop_hz > 1.0f) {
+            snprintf(status_msg, sizeof(status_msg), "%.0fHz D:%lu F:%lu", local_data.core1_loop_hz, local_data.debug_counter, local_data.fallback_counter);
+        } else {
+            snprintf(status_msg, sizeof(status_msg), "D:%lu F:%lu", local_data.debug_counter, local_data.fallback_counter);
+        }
+        display.drawString(0, 0, status_msg);
+
+        // ==================================================
+        // Temperature (Bottom Left)
+        // ==================================================
+        uint8_t temp_y = display.getHeight() - display.getFontHeight()/2;
+        display.drawString(0, temp_y, temp_sensor.get_formatted_temperature());
+
+        // ==================================================
+        // Voltage (Center)
+        // ==================================================
+        char voltage_str[32];
+        snprintf(voltage_str, sizeof(voltage_str), "%.2f mV", local_data.current_voltage_mv);
+        display.drawString(display.centerx(), display.centery(), voltage_str);
 
         display.display();
 
@@ -178,19 +202,11 @@ int main() {
     // Core 1: Initialize data acquisition hardware
     printf("Core 1: Starting data acquisition and processing...\n");
     
-    // Initialize ADC for battery monitoring
-    adc_init();
-    adc_gpio_init(PIN_ADC_BATTERY);
-    adc_select_input(0); // ADC0 (GP26)
-    
-    // Initialize button pins
-    gpio_init(PIN_BUTTON_OUT);
-    gpio_set_dir(PIN_BUTTON_OUT, GPIO_OUT);
-    gpio_put(PIN_BUTTON_OUT, 0); // Drive low
-    
-    gpio_init(PIN_BUTTON_IN);
-    gpio_set_dir(PIN_BUTTON_IN, GPIO_IN);
-    gpio_pull_up(PIN_BUTTON_IN);
+    // Initialize ADC sampler with 10Hz sampling rate on ADC0 (PIN_ADC_BATTERY)
+    ADCSampler adc_sampler(0); // ADC0 (GP26)
+    adc_sampler.init(10); // 10Hz sampling rate (much slower for testing)
+    adc_sampler.start();
+    printf("Core 1: ADC sampler initialized at 10Hz\n");
     
     // Initialize status LED
     gpio_init(PIN_STATUS_LED);
@@ -211,9 +227,14 @@ int main() {
     
     // Core 1 main loop: Data Acquisition & Processing
     while (true) {
-        // Simple ADC reading for now (will be replaced with DMA-based sampling)
-        uint16_t adc_raw = adc_read();
-        float voltage_mv = (adc_raw * 3300.0f) / 4096.0f; // Convert to millivolts
+        // Get latest ADC sample from high-frequency sampler
+        uint16_t adc_raw;
+        float voltage_mv;
+        if (adc_sampler.get_sample(&adc_raw)) {
+            voltage_mv = (adc_raw * 3300.0f) / 4096.0f; // Convert to millivolts
+        } else {
+            voltage_mv = 0.0f; // No sample available
+        }
         
         // Calculate uptime and loop frequency every second
         uint32_t core1_uptime_ms = absolute_time_diff_us(core1_start_time, get_absolute_time()) / 1000;
@@ -231,22 +252,21 @@ int main() {
             g_shared_data.moving_average_mv = voltage_mv; // Simplified for now
             g_shared_data.core1_uptime_ms = core1_uptime_ms;
             g_shared_data.core1_loop_hz = core1_loop_hz;
+            g_shared_data.debug_counter++;
             g_shared_data.data_updated = true;
             mutex_exit(&g_data_mutex);
         }
         
+        // Debug: Force increment fallback counter even if mutex fails
+        static uint32_t fallback_counter = 0;
+        fallback_counter++;
+        
+        // Update fallback counter in shared data (using atomic write)
+        g_shared_data.fallback_counter = fallback_counter;
+        
         // Blink status LED to show Core 1 is running
         gpio_put(PIN_STATUS_LED, (loop_counter / 100) & 1);
         loop_counter++;
-        
-        // Check button for shot counter reset (simplified logic)
-        if (!gpio_get(PIN_BUTTON_IN)) {
-            if (mutex_try_enter(&g_data_mutex, NULL)) {
-                g_shared_data.shot_count = 0;
-                mutex_exit(&g_data_mutex);
-            }
-            sleep_ms(500); // Simple debounce
-        }
         
     // Kick the watchdog periodically
     watchdog_update();

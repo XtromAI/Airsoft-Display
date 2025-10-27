@@ -12,3 +12,7 @@ when placing headers, use the following format:
 // ==================================================
 </header-format>
 
+use windows powershell commands in the terminal
+
+use the display for debugging output because i cannot see serial output
+
