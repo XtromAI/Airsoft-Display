@@ -52,12 +52,13 @@ pico_set_program_version(airsoft-display "0.1")
     # pico_set_program_version(pico_examples "0.1")
 
 # Generate PIO header
-pico_generate_pio_header(airsoft-display ${CMAKE_CURRENT_LIST_DIR}/blink.pio)
+    # pico_generate_pio_header(airsoft-display ${CMAKE_CURRENT_LIST_DIR}/blink.pio)
+    # pico_generate_pio_header(airsoft-display ${CMAKE_CURRENT_LIST_DIR}/blink.pio)
     # pico_generate_pio_header(pico_examples ${CMAKE_CURRENT_LIST_DIR}/blink.pio)
 
 # Modify the below lines to enable/disable output over UART/USB
 pico_enable_stdio_uart(airsoft-display 0)
-pico_enable_stdio_usb(airsoft-display 0)
+pico_enable_stdio_usb(airsoft-display 1)
     # pico_enable_stdio_uart(pico_examples 0)
     # pico_enable_stdio_usb(pico_examples 0)
 

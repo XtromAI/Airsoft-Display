@@ -183,6 +183,8 @@ void display_main() {
 
 int main() {
     stdio_init_all();
+    sleep_ms(2000); // Wait for USB serial to initialize
+    
     // Check if we are recovering from a watchdog reset
     if (watchdog_caused_reboot()) {
         printf("[Watchdog] System recovered from watchdog reset!\n");
@@ -197,16 +199,16 @@ int main() {
     // Launch display function on Core 0 (despite the confusing function name)
     // Note: multicore_launch_core1() actually launches the function on Core 0, not Core 1!
     multicore_launch_core1(display_main);
-    printf("Core 1: Core 0 launched for display and UI\n");
+    // printf("Core 1: Core 0 launched for display and UI\n");
     
-    // Core 1: Initialize data acquisition hardware
-    printf("Core 1: Starting data acquisition and processing...\n");
+    // Core 1: Initialize data acquisition and processing...
+    // printf("Core 1: Starting data acquisition and processing...\n");
     
     // Initialize ADC sampler with 10Hz sampling rate on ADC0 (PIN_ADC_BATTERY)
     ADCSampler adc_sampler(0); // ADC0 (GP26)
     adc_sampler.init(10); // 10Hz sampling rate (much slower for testing)
     adc_sampler.start();
-    printf("Core 1: ADC sampler initialized at 10Hz\n");
+    // printf("Core 1: ADC sampler initialized at 10Hz\n");
     
     // Initialize status LED
     gpio_init(PIN_STATUS_LED);
@@ -217,7 +219,7 @@ int main() {
     // TODO: Implement moving average calculation
     // TODO: Implement shot detection logic
     
-    printf("Core 1: Data acquisition hardware initialized\n");
+    // printf("Core 1: Data acquisition hardware initialized\n");
     
     uint32_t loop_counter = 0;
     absolute_time_t core1_start_time = get_absolute_time();
