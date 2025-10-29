@@ -139,28 +139,35 @@ void display_main() {
         // wave_demo_frame(display);
 
         // ==================================================
-        // Sampler Status Message (Top Row)
+        // Metrics Display: Core Frequencies Only
         // ==================================================
-        char status_msg[64];
-        if (local_data.core1_loop_hz > 1.0f) {
-            snprintf(status_msg, sizeof(status_msg), "%.0fHz D:%lu F:%lu", local_data.core1_loop_hz, local_data.debug_counter, local_data.fallback_counter);
-        } else {
-            snprintf(status_msg, sizeof(status_msg), "D:%lu F:%lu", local_data.debug_counter, local_data.fallback_counter);
-        }
-        display.drawString(0, 0, status_msg);
 
-        // ==================================================
-        // Temperature (Bottom Left)
-        // ==================================================
-        uint8_t temp_y = display.getHeight() - display.getFontHeight()/2;
-        display.drawString(0, temp_y, temp_sensor.get_formatted_temperature());
+        uint8_t row_height = display.getFontHeight() + 4;
+        uint8_t y = 4;  // Start with 4px padding at top for consistent spacing
+        char metric_str[32];
 
-        // ==================================================
-        // Voltage (Center)
-        // ==================================================
-        char voltage_str[32];
-        snprintf(voltage_str, sizeof(voltage_str), "%.2f mV", local_data.current_voltage_mv);
-        display.drawString(display.centerx(), display.centery(), voltage_str);
+        // Show live counters for each core to indicate activity
+        snprintf(metric_str, sizeof(metric_str), "C0C: %lu", core0_display_count);
+        display.drawString(0, y, metric_str);
+        y += row_height;
+
+        snprintf(metric_str, sizeof(metric_str), "C1C: %lu", local_data.debug_counter);
+        display.drawString(0, y, metric_str);
+        y += row_height;
+
+        snprintf(metric_str, sizeof(metric_str), "TMP: %s", temp_sensor.get_formatted_temperature());
+        display.drawString(0, y, metric_str);
+        y += row_height;
+
+        float clamped_voltage = local_data.current_voltage_mv;
+        if (clamped_voltage < 0.0f) clamped_voltage = 0.0f;
+        if (clamped_voltage > 99.99f) clamped_voltage = 99.99f;
+        snprintf(metric_str, sizeof(metric_str), "VOL: %05.2fV", clamped_voltage);
+        display.drawString(0, y, metric_str);
+        y += row_height;
+
+        snprintf(metric_str, sizeof(metric_str), "SHT: %lu", local_data.shot_count);
+        display.drawString(0, y, metric_str);
 
         display.display();
 
