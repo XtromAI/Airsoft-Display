@@ -35,25 +35,94 @@ This is a Raspberry Pi Pico (RP2040) embedded C++ project that implements a shot
 - **Display:** SH1107 128x128 OLED (SPI mode, 3.3V)
 - **Battery:** Airsoft gun battery (7.4V or 11.1V LiPo)
 - **Voltage Regulator:** L7805CV (5V output, max 1.5A, input 7V-35V)
-- **Voltage Divider:** Equal-value resistors (10kΩ) for 2:1 division (max 6.6V input → 3.3V at ADC)
-- **Power:** Pico powered via USB 5V or VSYS; typical draw ~50mA (Pico + Display)
+- **Voltage Divider:** 10kΩ and 28kΩ resistors (scales down battery voltage to ADC range, max 3.3V)
+- **Power:** USB 5V during development; L7805CV voltage regulator (powered from battery balance connector) when deployed. Typical draw ~50mA (Pico + Display)
 
 ### Dual-Core Architecture
 
 **Core 0 (Display & UI):**
 - Display rendering and UI updates
 - SPI communication with SH1107
-- User input handling (button)
-- Updates at ~60Hz via timer interrupt
+- User input handling (button) - **Not yet implemented**
+- Updates at ~60Hz via hardware timer interrupt
 - Reads shared data via mutex
 
 **Core 1 (Data Acquisition):**
-- High-frequency ADC sampling (target ≥1kHz with DMA)
-- Moving average calculation
-- Shot detection (voltage dip monitoring)
+- High-frequency ADC sampling (target ≥1kHz with DMA) - **Currently timer-based at 10Hz**
+- Moving average calculation - **Not yet implemented**
+- Shot detection (voltage dip monitoring) - **Not yet implemented**
 - Battery voltage processing
 - Updates shared data via mutex
 - Watchdog management
+
+## RP2040 Hardware Features & Usage
+
+This project leverages the RP2040's specialized hardware for responsive operation, efficient power consumption, and high sample rates.
+
+### Hardware Timers
+- **Display Updates:** Hardware timer triggers display refresh at ~60Hz (`add_repeating_timer_ms`)
+- **ADC Sampling:** Currently uses hardware timer alarms (`add_alarm_in_us`) for periodic sampling
+- **Benefits:** Precise, low-jitter timing; frees CPU for other tasks
+- **APIs:** `hardware/timer.h` - `add_repeating_timer_ms()`, `add_alarm_in_us()`, `cancel_alarm()`
+
+### DMA (Direct Memory Access)
+- **Planned for ADC:** DMA circular buffer for continuous high-speed ADC sampling (≥1kHz)
+  - Timer triggers ADC conversions
+  - DMA automatically transfers ADC results to RAM buffer
+  - CPU only processes completed batches via DMA interrupts
+- **Potential for Display:** Could stream framebuffer to SPI peripheral (future optimization)
+- **Benefits:** Offloads CPU, enables true background sampling, no missed samples
+- **APIs:** `hardware/dma.h` - `dma_channel_config`, `dma_channel_transfer_*()`, DMA IRQ handlers
+- **Current Status:** Not yet implemented; using timer-based approach at 10Hz for development
+
+### PIO (Programmable I/O)
+- **Potential Use:** Custom SPI protocol for display via PIO state machines
+- **Benefits:** Offloads SPI signaling to dedicated hardware, frees CPU, precise timing control
+- **APIs:** `hardware/pio.h` - `pio_sm_*()` functions, PIO assembly programs
+- **Current Status:** Not implemented; using hardware SPI (SPI1) successfully
+- **Future:** Optional optimization if CPU becomes bottleneck (see `docs/archive/sh1107-update-plan.md`)
+
+### Dual-Core Processing
+- **Core 0:** UI and display rendering (non-critical timing)
+- **Core 1:** Time-critical data acquisition and shot detection
+- **Synchronization:** `mutex_t` from `pico_sync` for thread-safe shared data access
+- **Benefits:** True parallel processing; display rendering never blocks ADC sampling
+- **APIs:** `pico/multicore.h` - `multicore_launch_core1()`, `pico/sync.h` - `mutex_t`, `mutex_enter_blocking()`
+
+### Watchdog Timer
+- **Purpose:** Automatic system recovery from crashes or hangs
+- **Configuration:** 2-second timeout, enabled in `main()`, both cores must kick periodically
+- **Implementation:** `watchdog_update()` called in main loops of both cores
+- **Benefits:** Ensures system reliability; auto-reboot on failure
+- **APIs:** `hardware/watchdog.h` - `watchdog_enable()`, `watchdog_update()`, `watchdog_caused_reboot()`
+
+### ADC (Analog-to-Digital Converter)
+- **Input:** GP26 (ADC0) connected to battery voltage divider
+- **Configuration:** 12-bit resolution, free-running mode (`adc_run(true)`)
+- **Sampling:** Currently timer-based; planned DMA upgrade for ≥1kHz continuous sampling
+- **Benefits:** Built-in ADC with low noise, sufficient resolution for voltage monitoring
+- **APIs:** `hardware/adc.h` - `adc_init()`, `adc_gpio_init()`, `adc_select_input()`, `adc_read()`
+
+### SPI (Serial Peripheral Interface)
+- **Instance:** SPI1 for SH1107 display
+- **Pins:** GP14 (SCK), GP15 (MOSI), GP13 (CS), GP21 (DC), GP20 (RST)
+- **Configuration:** Hardware SPI via `gpio_set_function(pin, GPIO_FUNC_SPI)`
+- **Benefits:** Hardware-accelerated serial communication, efficient display updates
+- **APIs:** `hardware/spi.h` - `spi_init()`, `spi_write_blocking()`
+
+### Power Efficiency Considerations
+- **Sleep States:** Use `tight_loop_contents()` when waiting (lower power than busy loops)
+- **Display Contrast:** Configurable (`display.setContrast()`); affects power consumption
+- **Future Optimizations:** 
+  - Display sleep mode when idle
+  - CPU frequency scaling if needed
+  - PIO/DMA to reduce CPU wake time
+
+### Memory Architecture
+- **Framebuffer:** 2KB RAM for 128x128 monochrome display (efficient)
+- **DMA Buffers:** Circular buffers in SRAM for ADC samples
+- **Stack Allocation:** Prefer stack over heap for embedded performance
+- **Shared Data:** Minimal volatile structure protected by mutex
 
 ## Development Environment
 
@@ -234,11 +303,16 @@ mutex_exit(&g_data_mutex);
 ## References
 
 - **Pico SDK Documentation:** https://www.raspberrypi.com/documentation/pico-sdk/
-- **SH1107 Datasheet:** Search for "SH1107 OLED controller datasheet"
+- **Hardware Datasheets:** See `docs/hardware/` directory
+  - `pico-datasheet.pdf` - RP2040 microcontroller specifications
+  - `SH1107Datasheet.pdf` - Display controller reference
+  - `getting-started-with-pico.pdf` - Raspberry Pi Pico guide
 - **Project Documentation:** See `docs/` directory
   - `design-guide.md` - Original design spec
   - `PROJECT-STATUS.md` - Current implementation status
+  - `RECONNECTION-GUIDE.md` - Quick project overview
   - `docs/display/` - Display-specific documentation
+  - `docs/hardware/` - Hardware datasheets and schematics
 
 ## Best Practices
 
