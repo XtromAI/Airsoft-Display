@@ -29,12 +29,12 @@ This project implements a shot counter and battery monitor for an Airsoft gun us
 - **Display:** SH1107 128x128 OLED display (SPI interface)
   - Reference: 1.3-inch SH1107 OLED Display on Amazon
   - *Note: Please confirm the screen size and SPI connection details yourself. The plan assumes a 128x128 resolution and an SPI interface.*
-- **Battery:** Airsoft gun battery (7.4V or 11.1V LiPo)
+- **Battery:** Airsoft gun battery (11.1V 3S LiPo)
 - **Voltage Regulator:** DC-DC converter or LDO to power the Pico from the Airsoft battery, stepping the voltage down to the Pico's operating range (e.g., 3.3V or 5V via VBUS).
   - **Specific Model:** STMicroelectronics L7805CV
   - **Specifications:** Fixed 5V output, max 1.5A, input 7V–35V.
-  - **Input Voltage:** Powered by two cells of the 11.1V battery via the balance port connector (nominal 7.4V).
-  - *Note: Due to the voltage drop (e.g., from 7.4V to 5V), the regulator will dissipate a small amount of heat. A heatsink is still recommended to ensure stable operation and prevent thermal shutdown, especially under load.*
+  - **Input Voltage:** Powered by the 11.1V 3S LiPo battery (nominal 11.1V).
+  - *Note: Due to the voltage drop (e.g., from 11.1V to 5V), the regulator will dissipate heat. A heatsink is recommended to ensure stable operation and prevent thermal shutdown, especially under load.*
 
 - **Voltage Divider:** Two series resistors to scale battery voltage down to Pico's ADC range (max 3.3V).
 - **Inputs:**
