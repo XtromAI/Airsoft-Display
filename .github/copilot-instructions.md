@@ -34,7 +34,7 @@ This is a Raspberry Pi Pico (RP2040) embedded C++ project that implements a shot
 - **Microcontroller:** Raspberry Pi Pico (RP2040)
 - **Display:** SH1107 128x128 OLED (SPI mode, 3.3V)
 - **Battery:** Airsoft gun battery (7.4V or 11.1V LiPo)
-- **Voltage Regulator:** L7805CV (5V output, max 1.5A, input 7V-35V)
+- **Voltage Regulator:** L7805CV (5V output, max 1A, input 7.5V-35V)
 - **Voltage Divider:** 10kΩ and 28kΩ resistors (scales down battery voltage to ADC range, max 3.3V)
 - **Power:** USB 5V during development; L7805CV voltage regulator (powered from battery balance connector) when deployed. Typical draw ~50mA (Pico + Display)
 
@@ -48,9 +48,9 @@ This is a Raspberry Pi Pico (RP2040) embedded C++ project that implements a shot
 - Reads shared data via mutex
 
 **Core 1 (Data Acquisition):**
-- High-frequency ADC sampling (target ≥1kHz with DMA) - **Currently timer-based at 10Hz**
+- High-frequency ADC sampling (target ≥1kHz with DMA) - **Currently timer-based at 10Hz for development/testing; insufficient for shot detection which requires detecting millisecond-scale motor current spikes**
 - Moving average calculation - **Not yet implemented**
-- Shot detection (voltage dip monitoring) - **Not yet implemented**
+- Shot detection (voltage dip monitoring) - **Not yet implemented; requires DMA upgrade to ≥1kHz first**
 - Battery voltage processing
 - Updates shared data via mutex
 - Watchdog management
@@ -162,7 +162,7 @@ When adding section headers in code, use this format:
 - **Classes:** PascalCase (e.g., `SH1107_Display`, `Temperature`)
 - **Functions/Methods:** camelCase (e.g., `drawChar`, `setPixel`)
 - **Variables:** snake_case for locals and members (e.g., `cs_pin`, `current_voltage_mv`)
-- **Constants:** kPascalCase or UPPER_SNAKE_CASE (e.g., `kConversionFactor`, `PIN_SPI_SCK`)
+- **Constants:** Use `kPascalCase` for C++ `constexpr` or `const` variables (e.g., `kConversionFactor`). Use `UPPER_SNAKE_CASE` for preprocessor macros/defines (e.g., `PIN_SPI_SCK`)
 - **Macros:** UPPER_SNAKE_CASE (e.g., `SH1107_DISPLAYON`)
 
 ### Code Organization
