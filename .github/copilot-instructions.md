@@ -162,7 +162,7 @@ When adding section headers in code, use this format:
 - **Classes:** PascalCase (e.g., `SH1107_Display`, `Temperature`)
 - **Functions/Methods:** camelCase (e.g., `drawChar`, `setPixel`)
 - **Variables:** snake_case for locals and members (e.g., `cs_pin`, `current_voltage_mv`)
-- **Constants:** Use `kPascalCase` for C++ `constexpr` or `const` variables (e.g., `kConversionFactor`). Use `UPPER_SNAKE_CASE` for preprocessor macros/defines (e.g., `PIN_SPI_SCK`)
+- **Constants:** UPPER_SNAKE_CASE (e.g., `CONVERSION_FACTOR`, `PIN_SPI_SCK`)
 - **Macros:** UPPER_SNAKE_CASE (e.g., `SH1107_DISPLAYON`)
 
 ### Code Organization
