@@ -140,9 +140,8 @@ This project leverages the RP2040's specialized hardware for responsive operatio
 
 ### Debugging
 
-- **Use the display for debugging output** - serial output may not be visible
-- Serial output currently disabled (`pico_enable_stdio_usb` = 0 in CMakeLists.txt)
-- On-screen debugging preferred for production environment
+- **Serial output available:** USB serial is enabled (`pico_enable_stdio_usb` = 1 in CMakeLists.txt)
+- **Display debugging:** On-screen debugging also available and useful for deployed systems
 - Status LED (GP25) available for simple state indication
 
 ## Code Style and Conventions
@@ -162,7 +161,8 @@ When adding section headers in code, use this format:
 - **Classes:** PascalCase (e.g., `SH1107_Display`, `Temperature`)
 - **Functions/Methods:** camelCase (e.g., `drawChar`, `setPixel`)
 - **Variables:** snake_case for locals and members (e.g., `cs_pin`, `current_voltage_mv`)
-- **Constants:** UPPER_SNAKE_CASE (e.g., `CONVERSION_FACTOR`, `PIN_SPI_SCK`)
+- **Constants:** UPPER_SNAKE_CASE for class constants and compile-time constants (e.g., `CONVERSION_FACTOR`, `PIN_SPI_SCK`, `DEFAULT_WIDTH`)
+  - Note: Some legacy code uses kPascalCase (e.g., `kConversionFactor` in Temperature class); prefer UPPER_SNAKE_CASE for new code
 - **Macros:** UPPER_SNAKE_CASE (e.g., `SH1107_DISPLAYON`)
 
 ### Code Organization
