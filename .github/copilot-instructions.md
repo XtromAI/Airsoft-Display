@@ -33,7 +33,7 @@ This is a Raspberry Pi Pico (RP2040) embedded C++ project that implements a shot
 
 - **Microcontroller:** Raspberry Pi Pico (RP2040)
 - **Display:** SH1107 128x128 OLED (SPI mode, 3.3V)
-- **Battery:** Airsoft gun battery (7.4V or 11.1V LiPo)
+- **Battery:** Airsoft gun battery (11.1V 3S LiPo)
 - **Voltage Regulator:** L7805CV (5V output, max 1A, input 7.5V-35V)
 - **Voltage Divider:** 10kΩ and 28kΩ resistors (scales down battery voltage to ADC range, max 3.3V)
 - **Power:** USB 5V during development; L7805CV voltage regulator (powered from battery balance connector) when deployed. Typical draw ~50mA (Pico + Display)
