@@ -119,7 +119,7 @@ This project leverages the RP2040's specialized hardware for responsive operatio
   - PIO/DMA to reduce CPU wake time
 
 ### Memory Architecture
-- **Framebuffer:** 2KB RAM for 128x128 monochrome display (efficient)
+- **Framebuffer:** 2KB RAM for 128x128 monochrome display (organized as 128 columns × 16 pages, matching SH1107 memory layout)
 - **DMA Buffers:** Circular buffers in SRAM for ADC samples
 - **Stack Allocation:** Prefer stack over heap for embedded performance
 - **Shared Data:** Minimal volatile structure protected by mutex
