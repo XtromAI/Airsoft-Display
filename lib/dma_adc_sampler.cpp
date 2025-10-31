@@ -169,8 +169,8 @@ void DMAADCSampler::stop() {
 bool DMAADCSampler::timer_callback(repeating_timer_t *rt) {
     // Trigger single ADC conversion (timer-paced sampling)
     // The result will go to FIFO, which triggers DMA
-    // Bit 3 (START_ONCE) triggers a single conversion
-    adc_hw->cs = 1u << 3;  // ADC_CS_START_ONCE
+    // Using ADC_CS_START_ONCE bit (bit 3) to trigger one conversion
+    hw_set_bits(&adc_hw->cs, 1u << 3);  // ADC_CS_START_ONCE_BITS
     
     return true;  // Keep repeating
 }
