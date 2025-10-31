@@ -8,8 +8,6 @@
 #include "hardware/adc.h"
 #include "hardware/timer.h"
 #include "adc_config.h"
-#include "voltage_filter.h"
-
 // ==================================================
 // DMA ADC Sampler Class
 // Implements 5 kHz sampling with double-buffering
