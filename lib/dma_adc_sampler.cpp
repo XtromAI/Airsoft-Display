@@ -141,14 +141,20 @@ void DMAADCSampler::start() {
     dma_channel_start(dma_channel);
     
     // Start timer to trigger ADC conversions at 5 kHz
-    add_repeating_timer_us(
+    bool timer_ok = add_repeating_timer_us(
         -ADCConfig::SAMPLE_PERIOD_US,  // Negative for accurate timing
         timer_callback,
         this,
         &adc_timer
     );
+    if (!timer_ok) {
+        timer_running = false;
+        running = false;
+        printf("DMAADCSampler: Failed to start ADC repeating timer\n");
+        return;
+    }
+
     timer_running = true;
-    
     running = true;
     printf("DMAADCSampler: Started (5 kHz sampling)\n");
 }
@@ -178,6 +184,9 @@ void DMAADCSampler::stop() {
 bool DMAADCSampler::timer_callback(repeating_timer_t *rt) {
     if (instance != nullptr) {
         instance->timer_trigger_count++;
+        if (instance->timer_trigger_count == 1) {
+            printf("DMAADCSampler: Timer callback active\n");
+        }
     }
     // Trigger single ADC conversion (timer-paced sampling)
     // The result will go to FIFO, which triggers DMA
@@ -205,6 +214,9 @@ void DMAADCSampler::dma_irq_handler() {
     dma_channel_acknowledge_irq0(instance->dma_channel);
     
     instance->dma_irq_count++;
+    if (instance->dma_irq_count == 1) {
+        printf("DMAADCSampler: DMA IRQ handler active\n");
+    }
 
     // Buffer just completed
     instance->buffer_count++;

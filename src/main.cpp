@@ -265,6 +265,7 @@ int main() {
     uint32_t core1_last_metrics_time_ms = 0;
     uint32_t core1_loop_count = 0;
     float core1_loop_hz = 0.0f;
+    uint32_t core1_last_debug_log_ms = 0;
     
     // Sample processing variables
     uint32_t total_samples_processed = 0;
@@ -275,7 +276,8 @@ int main() {
     // Core 1 main loop: Data Acquisition & Processing
     while (true) {
         // Check if a DMA buffer is ready for processing
-        if (dma_sampler.is_buffer_ready()) {
+        bool buffer_ready = dma_sampler.is_buffer_ready();
+        if (buffer_ready) {
             uint32_t buffer_size = 0;
             const uint16_t* buffer = dma_sampler.get_ready_buffer(&buffer_size);
             
@@ -309,6 +311,19 @@ int main() {
             core1_loop_hz = core1_loop_count / ((core1_uptime_ms - core1_last_metrics_time_ms) / 1000.0f);
             core1_loop_count = 0;
             core1_last_metrics_time_ms = core1_uptime_ms;
+        }
+
+        if (core1_uptime_ms - core1_last_debug_log_ms >= 1000) {
+            core1_last_debug_log_ms = core1_uptime_ms;
+            printf("[DMA] t=%lums ready=%d buf=%lu ovf=%lu irq=%lu tmr=%lu samp=%lu loop_hz=%.2f\n",
+                   core1_uptime_ms,
+                   buffer_ready,
+                   dma_sampler.get_buffer_count(),
+                   dma_sampler.get_overflow_count(),
+                   dma_sampler.get_irq_count(),
+                   dma_sampler.get_timer_trigger_count(),
+                   total_samples_processed,
+                   core1_loop_hz);
         }
         
         // Update shared data (with mutex protection)
