@@ -24,6 +24,8 @@ DMAADCSampler::DMAADCSampler()
       buffer_locked(false),
       locked_buffer_is_a(false),
       timer_running(false),
+    dma_irq_count(0),
+    timer_trigger_count(0),
       initialized(false),
       running(false) {
     
@@ -132,6 +134,8 @@ void DMAADCSampler::start() {
     buffer_count = 0;
     overflow_count = 0;
     buffer_locked = false;
+    dma_irq_count = 0;
+    timer_trigger_count = 0;
     
     // Start DMA transfer first (ready to receive ADC data)
     dma_channel_start(dma_channel);
@@ -172,6 +176,9 @@ void DMAADCSampler::stop() {
 // ==================================================
 
 bool DMAADCSampler::timer_callback(repeating_timer_t *rt) {
+    if (instance != nullptr) {
+        instance->timer_trigger_count++;
+    }
     // Trigger single ADC conversion (timer-paced sampling)
     // The result will go to FIFO, which triggers DMA
     // Using ADC_CS_START_ONCE bit (bit 3) to trigger one conversion
@@ -197,6 +204,8 @@ void DMAADCSampler::dma_irq_handler() {
     // Clear interrupt
     dma_channel_acknowledge_irq0(instance->dma_channel);
     
+    instance->dma_irq_count++;
+
     // Buffer just completed
     instance->buffer_count++;
     

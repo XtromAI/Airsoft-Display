@@ -53,6 +53,8 @@ typedef struct {
     uint32_t dma_buffer_count;   // Total buffers processed
     uint32_t dma_overflow_count; // Buffer overflow count (data loss)
     uint32_t samples_processed;  // Total samples processed through filter
+    uint32_t dma_irq_count;      // Total DMA IRQs serviced
+    uint32_t dma_timer_count;    // Total ADC timer triggers
 } shared_data_t;
 
 // Global shared data and mutex
@@ -144,6 +146,8 @@ void display_main() {
                 local_data.dma_buffer_count = g_shared_data.dma_buffer_count;
                 local_data.dma_overflow_count = g_shared_data.dma_overflow_count;
                 local_data.samples_processed = g_shared_data.samples_processed;
+                local_data.dma_irq_count = g_shared_data.dma_irq_count;
+                local_data.dma_timer_count = g_shared_data.dma_timer_count;
                 g_shared_data.data_updated = false;
                 data_available = true;
             }
@@ -173,6 +177,14 @@ void display_main() {
         snprintf(metric_str, sizeof(metric_str), "SMP: %lu", local_data.samples_processed);
         display.drawString(0, y, metric_str);
         y += row_height;
+
+    snprintf(metric_str, sizeof(metric_str), "IRQ: %lu", local_data.dma_irq_count);
+    display.drawString(0, y, metric_str);
+    y += row_height;
+
+    snprintf(metric_str, sizeof(metric_str), "TMR: %lu", local_data.dma_timer_count);
+    display.drawString(0, y, metric_str);
+    y += row_height;
 
         snprintf(metric_str, sizeof(metric_str), "TMP: %s", temp_sensor.get_formatted_temperature());
         display.drawString(0, y, metric_str);
@@ -316,6 +328,8 @@ int main() {
             g_shared_data.dma_buffer_count = dma_sampler.get_buffer_count();
             g_shared_data.dma_overflow_count = dma_sampler.get_overflow_count();
             g_shared_data.samples_processed = total_samples_processed;
+            g_shared_data.dma_irq_count = dma_sampler.get_irq_count();
+            g_shared_data.dma_timer_count = dma_sampler.get_timer_trigger_count();
             g_shared_data.data_updated = true;
             
             // Reset accumulators after updating shared data
