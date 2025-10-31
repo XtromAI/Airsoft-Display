@@ -21,7 +21,7 @@
 #include "adc_config.h"
 
 // Pre-computed constants for ADC conversion (optimization for ARM Cortex-M0+)
-static constexpr float ADC_TO_VOLTAGE_SCALE = (ADCConfig::ADC_VREF * 1000.0f * ADCConfig::VDIV_RATIO) / ADCConfig::ADC_MAX;
+static constexpr float ADC_TO_VOLTAGE_SCALE = (ADCConfig::ADC_VREF * 1000.0f * ADCConfig::VDIV_RATIO) / (1 << ADCConfig::ADC_BITS);
 
 // --- Pin assignments ---
 // Display pins (SPI1)
