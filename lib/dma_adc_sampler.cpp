@@ -71,6 +71,10 @@ bool DMAADCSampler::init() {
         false,  // Don't generate error IRQ
         false   // Don't shift samples to 8-bit
     );
+
+    // Clear any stale samples and ensure the ADC is enabled for conversions
+    adc_fifo_drain();
+    adc_run(true);
     
     // Claim a DMA channel
     dma_channel = dma_claim_unused_channel(true);
