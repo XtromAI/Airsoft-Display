@@ -21,6 +21,7 @@ DMAADCSampler::DMAADCSampler()
       buffer_count(0),
       overflow_count(0),
       buffer_locked(false),
+      locked_buffer_is_a(false),
       timer_running(false),
       initialized(false),
       running(false) {
@@ -170,10 +171,11 @@ void DMAADCSampler::stop() {
 // ==================================================
 
 bool DMAADCSampler::timer_callback(repeating_timer_t *rt) {
-    // Trigger ADC conversion by reading once
+    // Trigger ADC conversion
     // The ADC is in free-running mode, so this starts a conversion
     // The result will go to FIFO, which triggers DMA
-    adc_hw->cs = 1u << 3;  // Start ADC conversion (set START_ONCE bit)
+    // Bit 3 (START_ONCE) triggers a single conversion
+    adc_hw->cs = 1u << 3;  // ADC_CS_START_ONCE
     
     return true;  // Keep repeating
 }
@@ -201,7 +203,7 @@ void DMAADCSampler::dma_irq_handler() {
     // Mark the buffer that just filled as ready
     if (instance->using_buffer_a) {
         // Buffer A is now full
-        if (instance->buffer_a_ready && !instance->buffer_locked) {
+        if (instance->buffer_a_ready) {
             // Buffer A wasn't processed before next fill - overflow!
             instance->overflow_count++;
         }
@@ -212,7 +214,7 @@ void DMAADCSampler::dma_irq_handler() {
         dma_channel_set_write_addr(instance->dma_channel, instance->buffer_b, true);
     } else {
         // Buffer B is now full
-        if (instance->buffer_b_ready && !instance->buffer_locked) {
+        if (instance->buffer_b_ready) {
             // Buffer B wasn't processed before next fill - overflow!
             instance->overflow_count++;
         }
@@ -236,6 +238,7 @@ const uint16_t* DMAADCSampler::get_ready_buffer(uint32_t* size) {
     // Return buffer A if ready and not locked
     if (buffer_a_ready && !buffer_locked) {
         buffer_locked = true;
+        locked_buffer_is_a = true;
         if (size) *size = BUFFER_SIZE;
         return buffer_a;
     }
@@ -243,6 +246,7 @@ const uint16_t* DMAADCSampler::get_ready_buffer(uint32_t* size) {
     // Return buffer B if ready and not locked
     if (buffer_b_ready && !buffer_locked) {
         buffer_locked = true;
+        locked_buffer_is_a = false;
         if (size) *size = BUFFER_SIZE;
         return buffer_b;
     }
@@ -257,10 +261,10 @@ void DMAADCSampler::release_buffer() {
         return;  // No buffer was locked
     }
     
-    // Determine which buffer was locked and mark it as processed
-    if (buffer_a_ready) {
+    // Clear the ready flag for the specific buffer that was locked
+    if (locked_buffer_is_a) {
         buffer_a_ready = false;
-    } else if (buffer_b_ready) {
+    } else {
         buffer_b_ready = false;
     }
     

@@ -8,6 +8,7 @@
 #include "hardware/adc.h"
 #include "hardware/timer.h"
 #include "adc_config.h"
+
 // ==================================================
 // DMA ADC Sampler Class
 // Implements 5 kHz sampling with double-buffering
@@ -69,6 +70,7 @@ private:
     
     // Processing state
     volatile bool buffer_locked;  // true when application is processing a buffer
+    volatile bool locked_buffer_is_a;  // true if buffer A is locked, false if buffer B
     
     // Timer for ADC triggering
     repeating_timer_t adc_timer;

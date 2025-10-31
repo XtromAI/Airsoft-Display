@@ -20,6 +20,9 @@
 #include "voltage_filter.h"
 #include "adc_config.h"
 
+// Pre-computed constants for ADC conversion (optimization for ARM Cortex-M0+)
+static constexpr float ADC_TO_VOLTAGE_SCALE = (ADCConfig::ADC_VREF * 1000.0f) / ADCConfig::ADC_MAX;
+
 // --- Pin assignments ---
 // Display pins (SPI1)
 #define PIN_SPI_SCK     14
@@ -271,8 +274,8 @@ int main() {
                     float filtered_adc = voltage_filter.process(buffer[i]);
                     last_filtered_value = filtered_adc;
                     
-                    // Convert to voltage (millivolts)
-                    float voltage_mv = (filtered_adc * ADCConfig::ADC_VREF * 1000.0f) / ADCConfig::ADC_MAX;
+                    // Convert to voltage (millivolts) using pre-computed scale factor
+                    float voltage_mv = filtered_adc * ADC_TO_VOLTAGE_SCALE;
                     voltage_mv *= ADCConfig::VDIV_RATIO;  // Scale up by voltage divider ratio
                     
                     // Accumulate for moving average
@@ -297,17 +300,14 @@ int main() {
             core1_last_metrics_time_ms = core1_uptime_ms;
         }
         
-        // Calculate moving average voltage
-        float avg_voltage_mv = 0.0f;
-        if (voltage_sample_count > 0) {
-            avg_voltage_mv = accumulated_voltage_mv / voltage_sample_count;
-            // Reset accumulators for next period
-            accumulated_voltage_mv = 0.0f;
-            voltage_sample_count = 0;
-        }
-        
         // Update shared data (with mutex protection)
         if (mutex_try_enter(&g_data_mutex, NULL)) {
+            // Calculate moving average voltage from accumulated samples
+            float avg_voltage_mv = 0.0f;
+            if (voltage_sample_count > 0) {
+                avg_voltage_mv = accumulated_voltage_mv / voltage_sample_count;
+            }
+            
             g_shared_data.current_voltage_mv = avg_voltage_mv;
             g_shared_data.moving_average_mv = avg_voltage_mv;
             g_shared_data.filtered_voltage_adc = last_filtered_value;
@@ -318,6 +318,11 @@ int main() {
             g_shared_data.dma_overflow_count = dma_sampler.get_overflow_count();
             g_shared_data.samples_processed = total_samples_processed;
             g_shared_data.data_updated = true;
+            
+            // Reset accumulators after updating shared data
+            accumulated_voltage_mv = 0.0f;
+            voltage_sample_count = 0;
+            
             mutex_exit(&g_data_mutex);
         }
         
