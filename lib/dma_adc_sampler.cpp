@@ -256,6 +256,9 @@ void DMAADCSampler::release_buffer() {
         return;  // No buffer was locked
     }
     
+    // Disable interrupts during critical section to prevent race with DMA ISR
+    uint32_t irq_status = save_and_disable_interrupts();
+    
     // Clear the ready flag for the specific buffer that was locked
     if (locked_buffer_is_a) {
         buffer_a_ready = false;
@@ -264,4 +267,7 @@ void DMAADCSampler::release_buffer() {
     }
     
     buffer_locked = false;
+    
+    // Re-enable interrupts
+    restore_interrupts(irq_status);
 }
