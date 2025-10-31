@@ -25,10 +25,10 @@ namespace ADCConfig {
     constexpr float ADC_VREF = 3.3f;
     
     // Voltage divider (11.1V LiPo → 3.3V max on ADC)
-    // Using 10kΩ + 3.3kΩ for safety margin
-    constexpr float VDIV_R1 = 10000.0f;  // 10kΩ to battery
-    constexpr float VDIV_R2 = 3300.0f;   // 3.3kΩ to ground
-    constexpr float VDIV_RATIO = (VDIV_R1 + VDIV_R2) / VDIV_R2;  // 4.03
+    // Using 28kΩ + 10kΩ (actual hardware configuration)
+    constexpr float VDIV_R1 = 28000.0f;  // 28kΩ to battery
+    constexpr float VDIV_R2 = 10000.0f;  // 10kΩ to ground
+    constexpr float VDIV_RATIO = (VDIV_R1 + VDIV_R2) / VDIV_R2;  // 3.8
 }
 
 // ==================================================

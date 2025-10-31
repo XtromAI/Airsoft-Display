@@ -119,8 +119,8 @@ constexpr uint32_t MEDIAN_WINDOW = 5;      // Default: 5 samples
 constexpr float LPF_CUTOFF_HZ = 100.0f;    // Default: 100 Hz
 
 // To adjust for different voltage divider:
-constexpr float VDIV_R1 = 10000.0f;        // 10kΩ
-constexpr float VDIV_R2 = 3300.0f;         // 3.3kΩ
+constexpr float VDIV_R1 = 28000.0f;        // 28kΩ (to battery)
+constexpr float VDIV_R2 = 10000.0f;        // 10kΩ (to ground)
 ```
 
 ## Documentation

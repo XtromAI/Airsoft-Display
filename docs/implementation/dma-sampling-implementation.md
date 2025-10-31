@@ -160,7 +160,7 @@ namespace ADCConfig {
     constexpr uint32_t BUFFER_SIZE = 512;          // Power of 2
     constexpr uint32_t BUFFER_TIME_MS = 102;       // 102ms per buffer
     constexpr uint32_t ADC_GPIO = 26;              // GP26 (ADC0)
-    constexpr float VDIV_RATIO = 4.03;             // 10kΩ + 3.3kΩ divider
+    constexpr float VDIV_RATIO = 3.8;              // 28kΩ + 10kΩ divider
 }
 
 namespace FilterConfig {
