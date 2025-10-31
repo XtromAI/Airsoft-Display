@@ -1,5 +1,6 @@
 #include "dma_adc_sampler.h"
 #include "hardware/irq.h"
+#include "hardware/sync.h"
 #include <stdio.h>
 #include <string.h>
 
