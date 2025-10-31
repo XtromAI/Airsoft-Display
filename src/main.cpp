@@ -21,7 +21,7 @@
 #include "adc_config.h"
 
 // Pre-computed constants for ADC conversion (optimization for ARM Cortex-M0+)
-static constexpr float ADC_TO_VOLTAGE_SCALE = (ADCConfig::ADC_VREF * 1000.0f) / ADCConfig::ADC_MAX;
+static constexpr float ADC_TO_VOLTAGE_SCALE = (ADCConfig::ADC_VREF * 1000.0f * ADCConfig::VDIV_RATIO) / ADCConfig::ADC_MAX;
 
 // --- Pin assignments ---
 // Display pins (SPI1)
@@ -274,9 +274,8 @@ int main() {
                     float filtered_adc = voltage_filter.process(buffer[i]);
                     last_filtered_value = filtered_adc;
                     
-                    // Convert to voltage (millivolts) using pre-computed scale factor
+                    // Convert to voltage (millivolts) using pre-computed combined scale factor
                     float voltage_mv = filtered_adc * ADC_TO_VOLTAGE_SCALE;
-                    voltage_mv *= ADCConfig::VDIV_RATIO;  // Scale up by voltage divider ratio
                     
                     // Accumulate for moving average
                     accumulated_voltage_mv += voltage_mv;

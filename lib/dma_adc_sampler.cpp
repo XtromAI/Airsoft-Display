@@ -54,7 +54,9 @@ bool DMAADCSampler::init() {
         return true;  // Already initialized
     }
     
-    // Initialize ADC
+    // Initialize ADC hardware
+    // Note: This class assumes exclusive ownership of the ADC peripheral.
+    // If ADC is shared with other components, coordinate initialization externally.
     adc_init();
     adc_gpio_init(ADCConfig::ADC_GPIO);
     adc_select_input(ADCConfig::ADC_CHANNEL);
@@ -126,10 +128,7 @@ void DMAADCSampler::start() {
     overflow_count = 0;
     buffer_locked = false;
     
-    // Start ADC in free-running mode
-    adc_run(true);
-    
-    // Start DMA transfer
+    // Start DMA transfer first (ready to receive ADC data)
     dma_channel_start(dma_channel);
     
     // Start timer to trigger ADC conversions at 5 kHz
@@ -150,14 +149,11 @@ void DMAADCSampler::stop() {
         return;
     }
     
-    // Stop timer
+    // Stop timer (stops triggering new conversions)
     if (timer_running) {
         cancel_repeating_timer(&adc_timer);
         timer_running = false;
     }
-    
-    // Stop ADC
-    adc_run(false);
     
     // Disable DMA channel
     dma_channel_abort(dma_channel);
@@ -171,8 +167,7 @@ void DMAADCSampler::stop() {
 // ==================================================
 
 bool DMAADCSampler::timer_callback(repeating_timer_t *rt) {
-    // Trigger ADC conversion
-    // The ADC is in free-running mode, so this starts a conversion
+    // Trigger single ADC conversion (timer-paced sampling)
     // The result will go to FIFO, which triggers DMA
     // Bit 3 (START_ONCE) triggers a single conversion
     adc_hw->cs = 1u << 3;  // ADC_CS_START_ONCE
