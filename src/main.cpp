@@ -13,16 +13,13 @@
 #include "font8x8.h"
 #include "font16x16.h"
 #include "sh1107_demo.h"
-#include "temperature.h"
 #include "wave_demo.h"
-#include "adc_sampler.h"
 #include "dma_adc_sampler.h"
 #include "voltage_filter.h"
 #include "adc_config.h"
 
 // Pre-computed constants for ADC conversion (optimization for ARM Cortex-M0+)
 static constexpr float ADC_TO_VOLTAGE_SCALE = (ADCConfig::ADC_VREF * 1000.0f * ADCConfig::VDIV_RATIO) / (1 << ADCConfig::ADC_BITS);
-
 // --- Pin assignments ---
 // Display pins (SPI1)
 #define PIN_SPI_SCK     14
@@ -71,7 +68,6 @@ bool display_update_timer_callback(repeating_timer_t *rt) {
     g_display_update_flag = true;
     return true; // keep repeating
 }
-
 void display_main() {
     // Kick the watchdog as soon as possible
     watchdog_update();
@@ -85,8 +81,6 @@ void display_main() {
     // Create display object
     SH1107_Display display(spi1, PIN_SPI_CS, PIN_SPI_DC, PIN_SPI_RESET, 128, 128);
 
-    // Temperature sampling via ADC is temporarily disabled while the DMA sampler owns the ADC.
-    // TODO: Reintroduce temperature readings via shared sensor service that cooperates with DMA.
 
     // Initialize display
     if (!display.begin()) {
@@ -185,14 +179,10 @@ void display_main() {
     display.drawString(0, y, metric_str);
     y += row_height;
 
-    snprintf(metric_str, sizeof(metric_str), "TMP: --.-F");
-    display.drawString(0, y, metric_str);
-    y += row_height;
-
-        float clamped_voltage = local_data.current_voltage_mv;
-        if (clamped_voltage < 0.0f) clamped_voltage = 0.0f;
-        if (clamped_voltage > 99.99f) clamped_voltage = 99.99f;
-        snprintf(metric_str, sizeof(metric_str), "VOL: %05.2fV", clamped_voltage);
+    float voltage_v = local_data.current_voltage_mv * 0.001f;
+    if (voltage_v < 0.0f) voltage_v = 0.0f;
+    if (voltage_v > 99.99f) voltage_v = 99.99f;
+    snprintf(metric_str, sizeof(metric_str), "VOL: %05.2fV", voltage_v);
         display.drawString(0, y, metric_str);
         y += row_height;
 
@@ -271,6 +261,7 @@ int main() {
     float last_filtered_value = 0.0f;
     float accumulated_voltage_mv = 0.0f;
     uint32_t voltage_sample_count = 0;
+    float last_avg_voltage_mv = 0.0f;
     
     // Core 1 main loop: Data Acquisition & Processing
     while (true) {
@@ -314,36 +305,38 @@ int main() {
 
         if (core1_uptime_ms - core1_last_debug_log_ms >= 1000) {
             core1_last_debug_log_ms = core1_uptime_ms;
-         uint fifo_level = adc_fifo_get_level();
-         bool dma_busy = dma_sampler.is_dma_busy();
-         uint32_t dma_remaining = dma_sampler.get_dma_transfer_remaining();
-         uint32_t adc_fcs = adc_hw->fcs;
-         uint32_t adc_cs = adc_hw->cs;
-            printf("[DMA] t=%lums ready=%d buf=%lu ovf=%lu irq=%lu tmr=%lu samp=%lu loop_hz=%.2f\n",
+            uint fifo_level = adc_fifo_get_level();
+            bool dma_busy = dma_sampler.is_dma_busy();
+            uint32_t dma_remaining = dma_sampler.get_dma_transfer_remaining();
+            uint32_t adc_fcs = adc_hw->fcs;
+            uint32_t adc_cs = adc_hw->cs;
+            printf("[DMA] t=%lums ready=%d buf=%lu ovf=%lu irq=%lu tmr=%lu samp=%lu loop_hz=%.2f avg=%.1fmV\n",
                    core1_uptime_ms,
                    buffer_ready,
                    dma_sampler.get_buffer_count(),
                    dma_sampler.get_overflow_count(),
                    dma_sampler.get_irq_count(),
                    dma_sampler.get_timer_trigger_count(),
-             total_samples_processed,
-             core1_loop_hz);
-         printf("      fifo=%u dma_busy=%d dma_rem=%lu adc_fcs=0x%08lx adc_cs=0x%08lx\n",
-             fifo_level,
-             dma_busy,
-             static_cast<unsigned long>(dma_remaining),
-             static_cast<unsigned long>(adc_fcs),
-             static_cast<unsigned long>(adc_cs));
+                   total_samples_processed,
+                   core1_loop_hz,
+                   last_avg_voltage_mv);
+            printf("      fifo=%u dma_busy=%d dma_rem=%lu adc_fcs=0x%08lx adc_cs=0x%08lx\n",
+                   fifo_level,
+                   dma_busy,
+                   static_cast<unsigned long>(dma_remaining),
+                   static_cast<unsigned long>(adc_fcs),
+                   static_cast<unsigned long>(adc_cs));
         }
         
         // Update shared data (with mutex protection)
         if (mutex_try_enter(&g_data_mutex, NULL)) {
             // Calculate moving average voltage from accumulated samples
-            float avg_voltage_mv = 0.0f;
+            float avg_voltage_mv = last_avg_voltage_mv;
             if (voltage_sample_count > 0) {
                 avg_voltage_mv = accumulated_voltage_mv / voltage_sample_count;
+                last_avg_voltage_mv = avg_voltage_mv;
             }
-            
+
             g_shared_data.current_voltage_mv = avg_voltage_mv;
             g_shared_data.moving_average_mv = avg_voltage_mv;
             g_shared_data.filtered_voltage_adc = last_filtered_value;
