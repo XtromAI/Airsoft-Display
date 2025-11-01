@@ -1,7 +1,7 @@
 # Airsoft Display - Project Status
 
-**Last Updated:** October 26, 2025  
-**Branch:** feature/sampler
+**Last Updated:** October 31, 2025  
+**Branch:** copilot/implement-sampling-method
 
 ## Overview
 
@@ -35,8 +35,8 @@ This project implements a shot counter and battery monitor for an Airsoft gun us
   - Mutex-protected shared data structure
 
 - **Hardware Integration**
-  - Temperature monitoring (`temperature.cpp`) with Fahrenheit/Celsius support
-  - ADC sampling framework (`adc_sampler.cpp`) using hardware timers
+  - DMA-based ADC sampling pipeline (`dma_adc_sampler.cpp`) paced by hardware alarms at 5 kHz
+  - Voltage filtering chain (`voltage_filter.cpp`) combining 5-tap median and 1st-order low-pass stages
   - Watchdog timer for system recovery
   - Status LED feedback (onboard LED on GP25)
 
@@ -53,36 +53,29 @@ This project implements a shot counter and battery monitor for an Airsoft gun us
 
 ### 🚧 In Progress / Partially Complete
 
-#### ADC Sampling
-- **Current State:** Timer-based sampling at 10Hz (testing rate)
-- **Next Steps:** Implement DMA-based high-frequency sampling (≥1kHz)
-- **Files:** `lib/adc_sampler.cpp`, `src/main.cpp`
+- Shot detection algorithm using voltage dip detection windows
+- Button input handling for shot counter reset (GP9/GP10)
+- UX polish for display (voltage history, shot counter presentation)
 
 ### ❌ Not Yet Implemented
 
 #### Core Functionality (High Priority)
-1. **DMA-based ADC Sampling**
-   - Replace timer callbacks with DMA circular buffer
-   - Target: ≥1kHz sampling rate
-   - Reference: Design Guide Step 2-3
-
-2. **Shot Detection Algorithm**
+1. **Shot Detection Algorithm**
    - Moving average calculation
    - Voltage dip detection
    - Configurable threshold
    - Shot counter increment logic
    - Reference: Design Guide Step 3
 
-3. **Button Input**
+2. **Button Input**
    - Hardware: GP9 (output), GP10 (input with pull-up)
    - Short press: No action
    - Long press (3s): Reset shot counter
    - Reference: Design Guide Step 5
 
-4. **Voltage Conversion & Display**
-   - Convert ADC to actual battery voltage (accounting for voltage divider)
-   - Display formatted voltage on screen
-   - Optional: Voltage trend graph
+3. **Voltage Analytics & Alerts**
+  - Add trend graph or min/max presentation
+  - Integrate voltage alerts as thresholds are defined
 
 #### Display Optimizations (Lower Priority)
 From `docs/sh1107-update-plan.md`:
@@ -97,8 +90,9 @@ From `docs/sh1107-update-plan.md`:
 src/
   main.cpp                 # Main application, Core 0 & Core 1 logic
 lib/
-  adc_sampler.cpp/.h       # Timer-based ADC sampling (needs DMA upgrade)
-  temperature.cpp/.h       # Temperature sensor wrapper
+  adc_sampler.cpp/.h       # Legacy timer-based ADC sampling (reference only)
+  dma_adc_sampler.cpp/.h   # Active DMA-based ADC sampling pipeline
+  voltage_filter.cpp/.h    # Voltage filtering pipeline
   sh1107-pico/src/
     sh1107_driver.cpp/.h   # Custom SH1107 display driver
     font8x8.cpp/.h         # 8x8 bitmap font
@@ -119,27 +113,26 @@ docs/
    - **Outcome:** Working display, better control, optimized for specific use case
    - **History:** See `docs/archive/` for original U8g2 research and troubleshooting attempts
 
-2. **Sampling Rate:** Currently at 10Hz instead of ≥1kHz
-   - **Why:** Testing/development phase
-   - **Next:** Implement DMA-based sampling for high frequency
+2. **Sampling Rate:** Upgraded from 10 Hz timer sampling to 5 kHz DMA sampling
+  - **Why:** Required for reliable shot detection
+  - **Approach:** Dual-buffer DMA with watchdog-safe hardware alarm triggers
 
 ## Next Steps (Recommended Priority Order)
 
 ### Immediate (Core Functionality)
-1. **Implement DMA-based ADC sampling** - Critical for shot detection
-2. **Add moving average calculation** - Foundation for shot detection
-3. **Implement shot detection logic** - Core feature
-4. **Add button input handling** - User interaction
+1. Implement shot detection logic
+2. Add button input handling
+3. Integrate shot counter UI elements
 
 ### Short Term (Polish)
-5. **Voltage display formatting** - User-facing feature
-6. **Shot counter display** - User-facing feature
-7. **Testing & calibration** - Verify shot detection accuracy
+4. Expand voltage analytics/graphing
+5. Run calibration passes on live hardware
+6. Define watchdog/health indicators for release builds
 
 ### Long Term (Optimization)
-8. **Display optimizations** - PIO, DMA, dirty regions (if needed)
-9. **Power optimization** - Sleep modes, display off when idle
-10. **User configuration** - Serial commands for threshold adjustment
+7. Display optimizations (PIO, DMA streaming, dirty regions)
+8. Power optimization (sleep modes, display idle states)
+9. User configuration (serial/OTA thresholds)
 
 ## Build & Flash
 
@@ -150,12 +143,12 @@ ninja -C build
 # Flash (if using debugger)
 # Task: "Flash"
 
-# Monitor (debugging via display, no serial output currently)
+# Monitor (USB CDC serial + on-screen diagnostics)
 ```
 
 ## Notes
 
-- Serial output currently disabled (`pico_enable_stdio_usb` = 0)
-- Debugging uses on-screen display per copilot-instructions.md
+- Serial output enabled over USB CDC (`pico_enable_stdio_usb` = 1)
+- Debugging uses on-screen metrics and periodic USB logs
 - Watchdog enabled with 2-second timeout
 - Display updates at ~60Hz via timer interrupt
