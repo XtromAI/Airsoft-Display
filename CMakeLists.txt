@@ -41,8 +41,9 @@ add_executable(airsoft-display
     lib/sh1107-pico/src/font16x16.cpp
     lib/sh1107-pico/src/sh1107_demo.cpp
     lib/sh1107-pico/src/wave_demo.cpp
-    lib/temperature.cpp
     lib/adc_sampler.cpp
+    lib/voltage_filter.cpp
+    lib/dma_adc_sampler.cpp
 )
     # add_executable(pico_examples pico_examples.cpp)
 
