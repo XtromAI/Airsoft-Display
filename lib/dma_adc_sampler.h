@@ -48,12 +48,10 @@ public:
 private:
     // DMA interrupt handler (static for C callback)
     static void dma_irq_handler();
+    static void hardware_alarm_callback(uint alarm_id);
     
     // Instance pointer for interrupt handler
     static DMAADCSampler* instance;
-    
-    // Timer callback for ADC triggering
-    static bool timer_callback(repeating_timer_t *rt);
     
     // Double buffers (ping-pong)
     static constexpr uint32_t BUFFER_SIZE = ADCConfig::BUFFER_SIZE;
@@ -76,9 +74,8 @@ private:
     volatile bool locked_buffer_is_a;  // true if buffer A is locked, false if buffer B
     
     // Timer for ADC triggering
-    repeating_timer_t adc_timer;
     bool timer_running;
-    alarm_pool_t* alarm_pool;
+    int hardware_alarm_id;
 
     // Debug counters
     volatile uint32_t dma_irq_count;

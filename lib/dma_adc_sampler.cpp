@@ -23,8 +23,8 @@ DMAADCSampler::DMAADCSampler()
       overflow_count(0),
       buffer_locked(false),
       locked_buffer_is_a(false),
-      timer_running(false),
-    alarm_pool(nullptr),
+                timer_running(false),
+                hardware_alarm_id(-1),
     dma_irq_count(0),
     timer_trigger_count(0),
       initialized(false),
@@ -45,6 +45,12 @@ DMAADCSampler::~DMAADCSampler() {
     if (dma_channel >= 0) {
         dma_channel_unclaim(dma_channel);
     }
+
+        if (hardware_alarm_id >= 0) {
+            hardware_alarm_cancel(hardware_alarm_id);
+            hardware_alarm_unclaim(hardware_alarm_id);
+            hardware_alarm_id = -1;
+        }
     
     instance = nullptr;
 }
@@ -108,13 +114,12 @@ bool DMAADCSampler::init() {
     irq_set_exclusive_handler(DMA_IRQ_0, dma_irq_handler);
     irq_set_enabled(DMA_IRQ_0, true);
     
-    // Create a dedicated alarm pool for ADC timing on this core
-    if (alarm_pool == nullptr) {
-        alarm_pool = alarm_pool_create_with_unused_hardware_alarm(4);
-        if (alarm_pool == nullptr) {
-            printf("DMAADCSampler: Failed to create alarm pool\n");
-            return false;
-        }
+        if (hardware_alarm_id < 0) {
+            hardware_alarm_id = hardware_alarm_claim_unused(false);
+            if (hardware_alarm_id < 0) {
+                printf("DMAADCSampler: Failed to claim hardware alarm\n");
+                return false;
+            }
     }
 
     initialized = true;
@@ -150,22 +155,12 @@ void DMAADCSampler::start() {
     // Start DMA transfer first (ready to receive ADC data)
     dma_channel_start(dma_channel);
     
-    // Start timer to trigger ADC conversions at 5 kHz
-    bool timer_ok = alarm_pool_add_repeating_timer_us(
-        alarm_pool,
-        -ADCConfig::SAMPLE_PERIOD_US,  // Negative for accurate timing
-        timer_callback,
-        this,
-        &adc_timer
-    );
-    if (!timer_ok) {
-        timer_running = false;
-        running = false;
-        printf("DMAADCSampler: Failed to start ADC repeating timer\n");
-        return;
-    }
+        // Configure hardware alarm for periodic sampling
+        hardware_alarm_set_callback(hardware_alarm_id, hardware_alarm_callback);
+        absolute_time_t target = delayed_by_us(get_absolute_time(), ADCConfig::SAMPLE_PERIOD_US);
+        hardware_alarm_set_target(hardware_alarm_id, target);
 
-    timer_running = true;
+        timer_running = true;
     running = true;
     printf("DMAADCSampler: Started (5 kHz sampling)\n");
 }
@@ -176,10 +171,10 @@ void DMAADCSampler::stop() {
     }
     
     // Stop timer (stops triggering new conversions)
-    if (timer_running) {
-        cancel_repeating_timer(&adc_timer);
-        timer_running = false;
-    }
+        if (timer_running && hardware_alarm_id >= 0) {
+            hardware_alarm_cancel(hardware_alarm_id);
+            timer_running = false;
+        }
     
     // Disable DMA channel
     dma_channel_abort(dma_channel);
@@ -192,19 +187,26 @@ void DMAADCSampler::stop() {
 // Timer Callback (ADC Triggering)
 // ==================================================
 
-bool DMAADCSampler::timer_callback(repeating_timer_t *rt) {
-    if (instance != nullptr) {
-        instance->timer_trigger_count++;
-        if (instance->timer_trigger_count == 1) {
-            printf("DMAADCSampler: Timer callback active\n");
-        }
+void DMAADCSampler::hardware_alarm_callback(uint alarm_id) {
+    if (instance == nullptr) {
+        return;
     }
+
+    if (alarm_id != static_cast<uint>(instance->hardware_alarm_id)) {
+        return;
+    }
+
+    instance->timer_trigger_count++;
+    if (instance->timer_trigger_count == 1) {
+        printf("DMAADCSampler: Timer callback active\n");
+    }
+
     // Trigger single ADC conversion (timer-paced sampling)
-    // The result will go to FIFO, which triggers DMA
-    // Using ADC_CS_START_ONCE bit (bit 3) to trigger one conversion
     hw_set_bits(&adc_hw->cs, 1u << 3);  // ADC_CS_START_ONCE_BITS
-    
-    return true;  // Keep repeating
+
+    // Schedule next alarm
+    absolute_time_t next_time = delayed_by_us(get_absolute_time(), ADCConfig::SAMPLE_PERIOD_US);
+    hardware_alarm_set_target(alarm_id, next_time);
 }
 
 // ==================================================
