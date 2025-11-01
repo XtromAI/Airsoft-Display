@@ -1,6 +1,7 @@
 #include "dma_adc_sampler.h"
 #include "hardware/irq.h"
 #include "hardware/sync.h"
+#include "hardware/regs/adc.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -15,20 +16,20 @@ DMAADCSampler* DMAADCSampler::instance = nullptr;
 // ==================================================
 
 DMAADCSampler::DMAADCSampler()
-    : dma_channel(-1),
-      buffer_a_ready(false),
-      buffer_b_ready(false),
-      using_buffer_a(true),
-      buffer_count(0),
-      overflow_count(0),
-      buffer_locked(false),
-      locked_buffer_is_a(false),
-                timer_running(false),
-                hardware_alarm_id(-1),
-    dma_irq_count(0),
-    timer_trigger_count(0),
-      initialized(false),
-      running(false) {
+        : dma_channel(-1),
+            buffer_a_ready(false),
+            buffer_b_ready(false),
+            using_buffer_a(true),
+            buffer_count(0),
+            overflow_count(0),
+            buffer_locked(false),
+            locked_buffer_is_a(false),
+            timer_running(false),
+            hardware_alarm_id(-1),
+            dma_irq_count(0),
+            timer_trigger_count(0),
+            initialized(false),
+            running(false) {
     
     // Zero buffers
     memset(buffer_a, 0, sizeof(buffer_a));
@@ -46,11 +47,11 @@ DMAADCSampler::~DMAADCSampler() {
         dma_channel_unclaim(dma_channel);
     }
 
-        if (hardware_alarm_id >= 0) {
-            hardware_alarm_cancel(hardware_alarm_id);
-            hardware_alarm_unclaim(hardware_alarm_id);
-            hardware_alarm_id = -1;
-        }
+    if (hardware_alarm_id >= 0) {
+        hardware_alarm_cancel(hardware_alarm_id);
+        hardware_alarm_unclaim(hardware_alarm_id);
+        hardware_alarm_id = -1;
+    }
     
     instance = nullptr;
 }
@@ -80,10 +81,11 @@ bool DMAADCSampler::init() {
         false,  // Don't generate error IRQ
         false   // Don't shift samples to 8-bit
     );
-
+    
     // Clear any stale samples and ensure the ADC is enabled for conversions
     adc_fifo_drain();
-    adc_run(true);
+    hw_clear_bits(&adc_hw->cs, ADC_CS_START_MANY_BITS);
+    hw_set_bits(&adc_hw->cs, ADC_CS_EN_BITS);
     
     // Claim a DMA channel
     dma_channel = dma_claim_unused_channel(true);
@@ -201,8 +203,14 @@ void DMAADCSampler::hardware_alarm_callback(uint alarm_id) {
         printf("DMAADCSampler: Timer callback active\n");
     }
 
-    // Trigger single ADC conversion (timer-paced sampling)
-    hw_set_bits(&adc_hw->cs, 1u << 3);  // ADC_CS_START_ONCE_BITS
+    // Only trigger a conversion when ADC is ready
+    if (adc_hw->cs & ADC_CS_READY_BITS) {
+        // Pulse START_ONCE to initiate a single conversion
+        hw_clear_bits(&adc_hw->cs, ADC_CS_START_ONCE_BITS);
+        hw_set_bits(&adc_hw->cs, ADC_CS_START_ONCE_BITS);
+    } else if ((instance->timer_trigger_count & 0x3FF) == 0) {
+        printf("DMAADCSampler: ADC not ready (cs=0x%08lx)\n", static_cast<unsigned long>(adc_hw->cs));
+    }
 
     // Schedule next alarm
     absolute_time_t next_time = delayed_by_us(get_absolute_time(), ADCConfig::SAMPLE_PERIOD_US);
