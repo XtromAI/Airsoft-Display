@@ -7,6 +7,7 @@
 #include "hardware/dma.h"
 #include "hardware/adc.h"
 #include "hardware/timer.h"
+#include "pico/time.h"
 #include "adc_config.h"
 
 // ==================================================
@@ -77,6 +78,7 @@ private:
     // Timer for ADC triggering
     repeating_timer_t adc_timer;
     bool timer_running;
+    alarm_pool_t* alarm_pool;
 
     // Debug counters
     volatile uint32_t dma_irq_count;

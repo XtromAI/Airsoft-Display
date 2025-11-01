@@ -24,6 +24,7 @@ DMAADCSampler::DMAADCSampler()
       buffer_locked(false),
       locked_buffer_is_a(false),
       timer_running(false),
+    alarm_pool(nullptr),
     dma_irq_count(0),
     timer_trigger_count(0),
       initialized(false),
@@ -107,6 +108,15 @@ bool DMAADCSampler::init() {
     irq_set_exclusive_handler(DMA_IRQ_0, dma_irq_handler);
     irq_set_enabled(DMA_IRQ_0, true);
     
+    // Create a dedicated alarm pool for ADC timing on this core
+    if (alarm_pool == nullptr) {
+        alarm_pool = alarm_pool_create_with_unused_hardware_alarm(4);
+        if (alarm_pool == nullptr) {
+            printf("DMAADCSampler: Failed to create alarm pool\n");
+            return false;
+        }
+    }
+
     initialized = true;
     printf("DMAADCSampler: Initialized (DMA channel %d)\n", dma_channel);
     
@@ -141,7 +151,8 @@ void DMAADCSampler::start() {
     dma_channel_start(dma_channel);
     
     // Start timer to trigger ADC conversions at 5 kHz
-    bool timer_ok = add_repeating_timer_us(
+    bool timer_ok = alarm_pool_add_repeating_timer_us(
+        alarm_pool,
         -ADCConfig::SAMPLE_PERIOD_US,  // Negative for accurate timing
         timer_callback,
         this,
