@@ -85,9 +85,8 @@ void display_main() {
     // Create display object
     SH1107_Display display(spi1, PIN_SPI_CS, PIN_SPI_DC, PIN_SPI_RESET, 128, 128);
 
-    // Create temperature object in Fahrenheit mode
-    Temperature temp_sensor(TemperatureUnit::Fahrenheit);
-    temp_sensor.set_calibration_offset(4.0f); // todo: make this part of user settings
+    // Temperature sampling via ADC is temporarily disabled while the DMA sampler owns the ADC.
+    // TODO: Reintroduce temperature readings via shared sensor service that cooperates with DMA.
 
     // Initialize display
     if (!display.begin()) {
@@ -186,9 +185,9 @@ void display_main() {
     display.drawString(0, y, metric_str);
     y += row_height;
 
-        snprintf(metric_str, sizeof(metric_str), "TMP: %s", temp_sensor.get_formatted_temperature());
-        display.drawString(0, y, metric_str);
-        y += row_height;
+    snprintf(metric_str, sizeof(metric_str), "TMP: --.-F");
+    display.drawString(0, y, metric_str);
+    y += row_height;
 
         float clamped_voltage = local_data.current_voltage_mv;
         if (clamped_voltage < 0.0f) clamped_voltage = 0.0f;
