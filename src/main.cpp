@@ -315,6 +315,11 @@ int main() {
 
         if (core1_uptime_ms - core1_last_debug_log_ms >= 1000) {
             core1_last_debug_log_ms = core1_uptime_ms;
+         uint fifo_level = adc_fifo_get_level();
+         bool dma_busy = dma_sampler.is_dma_busy();
+         uint32_t dma_remaining = dma_sampler.get_dma_transfer_remaining();
+         uint32_t adc_fcs = adc_hw->fcs;
+         uint32_t adc_cs = adc_hw->cs;
             printf("[DMA] t=%lums ready=%d buf=%lu ovf=%lu irq=%lu tmr=%lu samp=%lu loop_hz=%.2f\n",
                    core1_uptime_ms,
                    buffer_ready,
@@ -322,8 +327,14 @@ int main() {
                    dma_sampler.get_overflow_count(),
                    dma_sampler.get_irq_count(),
                    dma_sampler.get_timer_trigger_count(),
-                   total_samples_processed,
-                   core1_loop_hz);
+             total_samples_processed,
+             core1_loop_hz);
+         printf("      fifo=%u dma_busy=%d dma_rem=%lu adc_fcs=0x%08lx adc_cs=0x%08lx\n",
+             fifo_level,
+             dma_busy,
+             static_cast<unsigned long>(dma_remaining),
+             static_cast<unsigned long>(adc_fcs),
+             static_cast<unsigned long>(adc_cs));
         }
         
         // Update shared data (with mutex protection)

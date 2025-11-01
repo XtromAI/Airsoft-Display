@@ -310,3 +310,17 @@ void DMAADCSampler::release_buffer() {
     // Re-enable interrupts
     restore_interrupts(irq_status);
 }
+
+bool DMAADCSampler::is_dma_busy() const {
+    if (dma_channel < 0) {
+        return false;
+    }
+    return dma_channel_is_busy(dma_channel);
+}
+
+uint32_t DMAADCSampler::get_dma_transfer_remaining() const {
+    if (dma_channel < 0) {
+        return 0;
+    }
+    return dma_hw->ch[dma_channel].transfer_count;
+}

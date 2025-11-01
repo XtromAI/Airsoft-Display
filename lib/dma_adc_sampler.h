@@ -44,6 +44,8 @@ public:
     uint32_t get_overflow_count() const { return overflow_count; }
     uint32_t get_irq_count() const { return dma_irq_count; }
     uint32_t get_timer_trigger_count() const { return timer_trigger_count; }
+    bool is_dma_busy() const;
+    uint32_t get_dma_transfer_remaining() const;
     
 private:
     // DMA interrupt handler (static for C callback)
