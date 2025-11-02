@@ -314,6 +314,49 @@ mutex_exit(&g_data_mutex);
   - `docs/display/` - Display-specific documentation
   - `docs/hardware/` - Hardware datasheets and schematics
 
+## Documentation Standards
+
+### Development and Research Documentation
+
+All major changes, research efforts, and design decisions must be documented in the `docs/planning/` directory following these standards:
+
+**Naming Convention:**
+- Use date-prefixed format: `YYYY-MM-DD-description.md`
+- Example: `2025-11-02-button-debounce-implementation.md`
+- Use descriptive names that clearly indicate the document's purpose
+
+**When to Create Documentation:**
+- **Before** starting major feature implementations
+- **During** research or investigation of technical approaches
+- **After** completing significant milestones (retrospectives)
+- When making design decisions that affect future development
+- For troubleshooting complex issues that may recur
+
+**Document Structure Guidelines:**
+- Start with a brief overview/summary at the top
+- Include date and status (e.g., "In Progress", "Complete", "Archived")
+- Use clear section headers and markdown formatting
+- Include code examples where relevant
+- Reference related documentation and source files
+- Add "What was NOT implemented" sections when relevant to scope future work
+
+**Special Document Types:**
+- `PROJECT-STATUS.md` - Current implementation status (update as major features complete)
+- `RECONNECTION-GUIDE.md` - Quick overview for returning to the project after a break
+- `README.md` - Directory overview explaining purpose of archived or grouped documents
+
+**Timeline Approach Benefits:**
+- Chronological tracking of project evolution
+- Easy to locate decisions made at specific points in time
+- Preserves context for future troubleshooting
+- Creates a clear audit trail for engineering decisions
+
+**Example Documents in this Project:**
+- `2025-10-31-dma-sampling-implementation.md` - Implementation guide for DMA feature
+- `2025-10-31-dma-sampling-retrospective.md` - Post-implementation review
+- `2025-08-05-FONT-DECISION.md` - Design decision documentation
+- `2025-01-30-sampling-research.md` - Research findings
+
 ## Best Practices
 
 - Keep changes minimal and focused
