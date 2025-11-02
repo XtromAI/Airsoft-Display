@@ -2,6 +2,7 @@
 #include "hardware/irq.h"
 #include "hardware/sync.h"
 #include "hardware/regs/adc.h"
+#include "hardware/gpio.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -69,6 +70,7 @@ bool DMAADCSampler::init() {
     // Note: This class assumes exclusive ownership of the ADC peripheral.
     // If ADC is shared with other components, coordinate initialization externally.
     adc_init();
+    gpio_disable_pulls(ADCConfig::ADC_GPIO);
     adc_gpio_init(ADCConfig::ADC_GPIO);
     adc_select_input(ADCConfig::ADC_CHANNEL);
     
