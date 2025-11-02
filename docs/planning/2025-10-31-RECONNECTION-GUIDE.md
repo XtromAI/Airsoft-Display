@@ -63,7 +63,7 @@ Your main files to work with:
 ├── src/main.cpp              # Core 0 & 1 logic - where most work happens
 ├── lib/adc_sampler.cpp/.h    # Upgrade this to DMA-based sampling
 ├── lib/sh1107-pico/src/      # Display driver (pretty much done!)
-└── docs/PROJECT-STATUS.md    # Detailed status tracking
+└── docs/planning/2025-10-31-PROJECT-STATUS.md    # Detailed status tracking
 ```
 
 ## Quick Development Loop
@@ -90,14 +90,14 @@ I've cleaned up your docs:
 - `display-library-comparison.md` - Library comparison (decision made)
 
 ✅ **Updated:**
-- `design-guide.md` - Added note pointing to current status
-- `sh1107-update-plan.md` - Marked as future optimizations
-- `display-update-timing.md` - Noted current implementation
-- `sh1107-efficiency.md` - Marked as reference document
+- `2025-01-15-design-guide.md` - Added note pointing to current status
+- `2025-08-06-sh1107-update-plan.md` - Marked as future optimizations
+- `2025-08-07-display-update-timing.md` - Noted current implementation
+- `2025-08-06-sh1107-efficiency.md` - Marked as reference document
 
 ✅ **Created:**
-- `PROJECT-STATUS.md` - Comprehensive current state
-- `RECONNECTION-GUIDE.md` - This file (quick overview)
+- `2025-10-31-PROJECT-STATUS.md` - Comprehensive current state
+- `2025-10-31-RECONNECTION-GUIDE.md` - This file (quick overview)
 
 ## Your Custom Display Driver Decision
 
@@ -152,8 +152,8 @@ See `docs/archive/` for the original U8g2 research docs - they're preserved as a
 
 ## Resources in Your Docs
 
-- `docs/design-guide.md` - Original specification
-- `docs/PROJECT-STATUS.md` - Detailed current state
+- `docs/planning/2025-01-15-design-guide.md` - Original specification
+- `docs/planning/2025-10-31-PROJECT-STATUS.md` - Detailed current state
 - `docs/display/` - Display-specific references
 - `lib/sh1107-pico/docs/` - Your custom driver documentation
 

@@ -2,7 +2,7 @@
 
 # Raspberry Pi Pico Shot Counter & Battery Monitor
 
-> **NOTE:** This is the original design specification. For current implementation status, see [PROJECT-STATUS.md](PROJECT-STATUS.md)
+> **NOTE:** This is the original design specification. For current implementation status, see [2025-10-31-PROJECT-STATUS.md](2025-10-31-PROJECT-STATUS.md)
 
 **Objective:**  
 Reimplement the Airsoft Computer in C++ for the Raspberry Pi Pico to maximize performance, sampling reliability, and display clarity. The project uses an SH1107 SPI OLED display (128x128, monochrome) and a custom 16×16 font, with robust shot detection and battery monitoring for Airsoft applications.

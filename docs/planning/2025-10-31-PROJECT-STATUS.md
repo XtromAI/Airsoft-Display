@@ -99,10 +99,10 @@ lib/
     font16x16.cpp/.h       # 16x16 bitmap font
     sh1107_demo.cpp/.h     # Demo animations
     wave_demo.cpp/.h       # Wave animation
-docs/
-  design-guide.md          # Original design specification
-  sh1107-update-plan.md    # Display optimization roadmap
-  PROJECT-STATUS.md        # This file
+docs/planning/
+  2025-01-15-design-guide.md          # Original design specification
+  2025-08-06-sh1107-update-plan.md    # Display optimization roadmap
+  2025-10-31-PROJECT-STATUS.md        # This file
 ```
 
 ## Key Deviations from Original Design
