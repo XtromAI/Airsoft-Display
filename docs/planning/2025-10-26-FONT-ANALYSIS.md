@@ -322,7 +322,7 @@ You only have digits 0-9 in 16x16. If you want to display text (like "SHOTS" or 
 
 ### Do This Now:
 1. ✅ Keep current fonts (they work!)
-2. 📝 Document in `docs/archive/FONT-DECISION.md` why you chose this format
+2. 📝 Document in `docs/planning/2025-08-05-FONT-DECISION.md` why you chose this format
 3. 🛠️ When you need a new font, use web generator first
 4. 🔮 Eventually: Write converter script to automate
 
@@ -339,6 +339,6 @@ I can help you create these if you want:
 
 1. **`tools/convert_font.py`** - BDF/TTF to your format converter
 2. **`docs/FONT-WORKFLOW.md`** - How to add/modify fonts
-3. **`docs/archive/FONT-DECISION.md`** - Why you chose this format (like the driver decision)
+3. **`docs/planning/2025-08-05-FONT-DECISION.md`** - Why you chose this format (like the driver decision)
 
 Want me to start with any of these?

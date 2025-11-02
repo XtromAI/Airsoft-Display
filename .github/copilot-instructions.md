@@ -195,10 +195,10 @@ lib/
     bitmap_font.h             # Font interface
     sh1107_demo.cpp/.h        # Demo animations
     wave_demo.cpp/.h          # Wave animation
-docs/
-  design-guide.md             # Original design specification
-  PROJECT-STATUS.md           # Current implementation status
-  *.md                        # Additional documentation
+docs/planning/
+  2025-01-15-design-guide.md             # Original design specification
+  2025-10-31-PROJECT-STATUS.md           # Current implementation status
+  *.md                                   # Additional documentation
 CMakeLists.txt                # Build configuration
 ```
 
@@ -307,10 +307,10 @@ mutex_exit(&g_data_mutex);
   - `pico-datasheet.pdf` - RP2040 microcontroller specifications
   - `SH1107Datasheet.pdf` - Display controller reference
   - `getting-started-with-pico.pdf` - Raspberry Pi Pico guide
-- **Project Documentation:** See `docs/` directory
-  - `design-guide.md` - Original design spec
-  - `PROJECT-STATUS.md` - Current implementation status
-  - `RECONNECTION-GUIDE.md` - Quick project overview
+- **Project Documentation:** See `docs/planning/` directory
+  - `2025-01-15-design-guide.md` - Original design spec
+  - `2025-10-31-PROJECT-STATUS.md` - Current implementation status
+  - `2025-10-31-RECONNECTION-GUIDE.md` - Quick project overview
   - `docs/display/` - Display-specific documentation
   - `docs/hardware/` - Hardware datasheets and schematics
 

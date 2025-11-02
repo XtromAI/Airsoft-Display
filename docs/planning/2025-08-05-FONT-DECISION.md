@@ -58,7 +58,7 @@ The 16x16 font only has numbers. To display text like "SHOTS" or "BATTERY" in la
 
 ## Future Improvements
 
-See `docs/FONT-ANALYSIS.md` for detailed recommendations on:
+See `docs/planning/2025-10-26-FONT-ANALYSIS.md` for detailed recommendations on:
 1. Creating a font converter tool (BDF → custom format)
 2. Using web-based font generators
 3. Alternative font formats (Adafruit GFX)
@@ -69,5 +69,5 @@ See `docs/FONT-ANALYSIS.md` for detailed recommendations on:
 
 **Related Files:**
 - Current implementation: `lib/sh1107-pico/src/font*.cpp/h`
-- Analysis: `docs/FONT-ANALYSIS.md`
+- Analysis: `docs/planning/2025-10-26-FONT-ANALYSIS.md`
 - U8g2 library (unused): `lib/u8g2/`
