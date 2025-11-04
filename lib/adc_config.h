@@ -18,8 +18,8 @@ namespace ADCConfig {
     constexpr uint32_t BUFFER_TIME_MS = (BUFFER_SIZE * 1000) / SAMPLE_RATE_HZ;  // 102ms
     
     // ADC hardware
-    constexpr uint32_t ADC_GPIO = 26;  // GP26 = ADC0
-    constexpr uint32_t ADC_CHANNEL = 0;  // ADC0
+    constexpr uint32_t ADC_GPIO = 27;  // GP27 = ADC1 (moved from GP26)
+    constexpr uint32_t ADC_CHANNEL = 1;  // ADC1
     constexpr uint32_t ADC_BITS = 12;
     constexpr uint32_t ADC_MAX = (1 << ADC_BITS) - 1;  // 4095
     constexpr float ADC_VREF = 3.3f;

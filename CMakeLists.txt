@@ -41,7 +41,6 @@ add_executable(airsoft-display
     lib/sh1107-pico/src/font16x16.cpp
     lib/sh1107-pico/src/sh1107_demo.cpp
     lib/sh1107-pico/src/wave_demo.cpp
-    lib/adc_sampler.cpp
     lib/voltage_filter.cpp
     lib/dma_adc_sampler.cpp
 )
@@ -106,4 +105,29 @@ target_link_libraries(airsoft-display
 
 pico_add_extra_outputs(airsoft-display)
     # pico_add_extra_outputs(pico_examples)
+
+# Minimal ADC test firmware (separate UF2 for easy flashing)
+add_executable(adc-test
+    src/adc_test.cpp
+)
+
+pico_set_program_name(adc-test "adc-test")
+pico_set_program_version(adc-test "0.1")
+
+pico_enable_stdio_uart(adc-test 0)
+pico_enable_stdio_usb(adc-test 1)
+
+target_link_libraries(adc-test
+        pico_stdlib
+        hardware_adc
+)
+
+target_include_directories(adc-test PRIVATE
+    ${CMAKE_CURRENT_LIST_DIR}
+    ${CMAKE_CURRENT_BINARY_DIR}
+    src
+    lib
+)
+
+pico_add_extra_outputs(adc-test)
 

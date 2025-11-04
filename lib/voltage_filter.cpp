@@ -58,9 +58,8 @@ void LowPassFilter::reset() {
 }
 
 float LowPassFilter::process(float input) {
-    // IIR filter equation: y[n] = A0*x[n] + A1*x[n-1] + B1*y[n-1]
-    // Note: B1 coefficient is already negative (-0.86508946)
-    float output = A0 * input + A1 * x_prev + B1 * y_prev;
+    // IIR filter equation; B1 is stored negative so subtract to apply +|B1| feedback
+    float output = A0 * input + A1 * x_prev - B1 * y_prev;
     
     // Update state
     x_prev = input;

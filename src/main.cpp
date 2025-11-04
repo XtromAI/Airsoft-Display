@@ -34,12 +34,20 @@ static constexpr float ADC_TO_VOLTAGE_SCALE = (ADCConfig::ADC_VREF * 1000.0f * A
 // Status LED (onboard)
 #define PIN_STATUS_LED  25  // GP25 (onboard LED)
 
+// Debug pin driven high to feed known 3.3V to ADC when jumpered
+#define PIN_ADC_TEST_VREF 18  // GP18 provides logic HIGH reference
+
 // --- Shared data structure ---
 typedef struct {
     float current_voltage_mv;
     uint32_t shot_count;
     float moving_average_mv;
     float filtered_voltage_adc;  // Filtered ADC value (after median + lowpass)
+    float raw_avg_adc;
+    float raw_adc_voltage_mv;
+    uint16_t raw_min_adc;
+    uint16_t raw_max_adc;
+    uint8_t test_pin_level;
     bool data_updated;
     // Live core metrics
     uint32_t core1_uptime_ms;
@@ -132,6 +140,11 @@ void display_main() {
                 local_data.shot_count = g_shared_data.shot_count;
                 local_data.moving_average_mv = g_shared_data.moving_average_mv;
                 local_data.filtered_voltage_adc = g_shared_data.filtered_voltage_adc;
+                local_data.raw_avg_adc = g_shared_data.raw_avg_adc;
+                local_data.raw_adc_voltage_mv = g_shared_data.raw_adc_voltage_mv;
+                local_data.raw_min_adc = g_shared_data.raw_min_adc;
+                local_data.raw_max_adc = g_shared_data.raw_max_adc;
+                local_data.test_pin_level = g_shared_data.test_pin_level;
                 local_data.data_updated = g_shared_data.data_updated;
                 local_data.core1_uptime_ms = g_shared_data.core1_uptime_ms;
                 local_data.core1_loop_hz = g_shared_data.core1_loop_hz;
@@ -186,6 +199,25 @@ void display_main() {
         display.drawString(0, y, metric_str);
         y += row_height;
 
+        float adc_voltage_v = local_data.raw_adc_voltage_mv * 0.001f;
+        if (adc_voltage_v < 0.0f) adc_voltage_v = 0.0f;
+        if (adc_voltage_v > ADCConfig::ADC_VREF) adc_voltage_v = ADCConfig::ADC_VREF;
+        snprintf(metric_str, sizeof(metric_str), "ADC: %05.2fV", adc_voltage_v);
+        display.drawString(0, y, metric_str);
+        y += row_height;
+
+        snprintf(metric_str, sizeof(metric_str), "RAW: %05.0f", local_data.raw_avg_adc);
+        display.drawString(0, y, metric_str);
+        y += row_height;
+
+        snprintf(metric_str, sizeof(metric_str), "MN:%4u MX:%4u", local_data.raw_min_adc, local_data.raw_max_adc);
+        display.drawString(0, y, metric_str);
+        y += row_height;
+
+    snprintf(metric_str, sizeof(metric_str), "PIN18:%d", local_data.test_pin_level);
+    display.drawString(0, y, metric_str);
+    y += row_height;
+
         snprintf(metric_str, sizeof(metric_str), "SHT: %lu", local_data.shot_count);
         display.drawString(0, y, metric_str);
 
@@ -223,6 +255,19 @@ int main() {
     // Initialize mutex
     mutex_init(&g_data_mutex);
     
+    // Drive reference pin high for manual ADC testing before launching other cores
+    gpio_init(PIN_ADC_TEST_VREF);
+    gpio_set_function(PIN_ADC_TEST_VREF, GPIO_FUNC_SIO);
+    gpio_disable_pulls(PIN_ADC_TEST_VREF);
+    gpio_set_dir(PIN_ADC_TEST_VREF, GPIO_OUT);
+    gpio_put(PIN_ADC_TEST_VREF, 1);
+    gpio_set_drive_strength(PIN_ADC_TEST_VREF, GPIO_DRIVE_STRENGTH_12MA);
+    printf("GP18 configured: func=%d out_en=%d out_lvl=%d in_lvl=%d\n",
+        gpio_get_function(PIN_ADC_TEST_VREF),
+        gpio_is_dir_out(PIN_ADC_TEST_VREF),
+        gpio_get_out_level(PIN_ADC_TEST_VREF),
+        gpio_get(PIN_ADC_TEST_VREF));
+
     // Launch display function on Core 0 (despite the confusing function name)
     // Note: multicore_launch_core1() actually launches the function on Core 0, not Core 1!
     multicore_launch_core1(display_main);
@@ -262,6 +307,10 @@ int main() {
     float accumulated_voltage_mv = 0.0f;
     uint32_t voltage_sample_count = 0;
     float last_avg_voltage_mv = 0.0f;
+    float last_raw_avg = 0.0f;
+    float last_raw_adc_mv = 0.0f;
+    uint16_t last_raw_min = 0;
+    uint16_t last_raw_max = 0;
     
     // Core 1 main loop: Data Acquisition & Processing
     while (true) {
@@ -272,10 +321,19 @@ int main() {
             const uint16_t* buffer = dma_sampler.get_ready_buffer(&buffer_size);
             
             if (buffer != nullptr && buffer_size > 0) {
+                uint32_t raw_sum = 0;
+                uint16_t raw_min = 0xFFFF;
+                uint16_t raw_max = 0;
+
                 // Process all samples in the buffer through the filter chain
                 for (uint32_t i = 0; i < buffer_size; ++i) {
+                    uint16_t sample = buffer[i];
+                    raw_sum += sample;
+                    if (sample < raw_min) raw_min = sample;
+                    if (sample > raw_max) raw_max = sample;
+                    
                     // Filter the raw ADC sample
-                    float filtered_adc = voltage_filter.process(buffer[i]);
+                    float filtered_adc = voltage_filter.process(sample);
                     last_filtered_value = filtered_adc;
                     
                     // Convert to voltage (millivolts) using pre-computed combined scale factor
@@ -287,6 +345,12 @@ int main() {
                     
                     total_samples_processed++;
                 }
+
+                float buffer_avg = static_cast<float>(raw_sum) / static_cast<float>(buffer_size);
+                last_raw_avg = buffer_avg;
+                last_raw_min = raw_min;
+                last_raw_max = raw_max;
+                last_raw_adc_mv = (buffer_avg / static_cast<float>(ADCConfig::ADC_MAX)) * ADCConfig::ADC_VREF * 1000.0f;
                 
                 // Release the buffer back to DMA
                 dma_sampler.release_buffer();
@@ -348,6 +412,11 @@ int main() {
             g_shared_data.samples_processed = total_samples_processed;
             g_shared_data.dma_irq_count = dma_sampler.get_irq_count();
             g_shared_data.dma_timer_count = dma_sampler.get_timer_trigger_count();
+            g_shared_data.raw_avg_adc = last_raw_avg;
+            g_shared_data.raw_adc_voltage_mv = last_raw_adc_mv;
+            g_shared_data.raw_min_adc = last_raw_min;
+            g_shared_data.raw_max_adc = last_raw_max;
+            g_shared_data.test_pin_level = gpio_get(PIN_ADC_TEST_VREF);
             g_shared_data.data_updated = true;
             
             // Reset accumulators after updating shared data
@@ -368,8 +437,8 @@ int main() {
         gpio_put(PIN_STATUS_LED, (loop_counter / 1000) & 1);
         loop_counter++;
         
-        // Kick the watchdog periodically
-        watchdog_update();
+    // Kick the watchdog periodically
+    watchdog_update();
         
         // Small yield to prevent tight looping when no buffers ready
         // DMA will interrupt when buffer is ready
