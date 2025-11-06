@@ -1,0 +1,256 @@
+#include "flash_storage.h"
+#include "hardware/flash.h"
+#include "hardware/sync.h"
+#include "pico/stdlib.h"
+#include <string.h>
+#include <stdio.h>
+
+// CRC32 implementation for data verification
+static uint32_t crc32(const uint8_t* data, uint32_t length) {
+    uint32_t crc = 0xFFFFFFFF;
+    for (uint32_t i = 0; i < length; i++) {
+        crc ^= data[i];
+        for (int j = 0; j < 8; j++) {
+            crc = (crc >> 1) ^ (0xEDB88320 & -(crc & 1));
+        }
+    }
+    return ~crc;
+}
+
+namespace FlashStorage {
+
+bool init() {
+    // Verify flash is accessible and partition is within bounds
+    // The RP2040 has 2MB flash, our partition is at 1MB-2MB
+    printf("FlashStorage: Initializing flash storage\n");
+    printf("FlashStorage: Partition offset: 0x%08lx\n", static_cast<unsigned long>(DATA_FLASH_OFFSET));
+    printf("FlashStorage: Partition size: %lu bytes\n", static_cast<unsigned long>(DATA_FLASH_SIZE));
+    printf("FlashStorage: Max captures: %lu\n", static_cast<unsigned long>(MAX_CAPTURES));
+    
+    // Read first few bytes to ensure flash is accessible
+    const uint8_t* flash_ptr = (const uint8_t*)(XIP_BASE + DATA_FLASH_OFFSET);
+    volatile uint32_t test = *(uint32_t*)flash_ptr;
+    (void)test;  // Suppress unused variable warning
+    
+    printf("FlashStorage: Initialized successfully\n");
+    return true;
+}
+
+int write_capture(const uint16_t* samples, uint32_t count, uint32_t timestamp) {
+    if (samples == nullptr || count == 0) {
+        printf("FlashStorage: Invalid parameters\n");
+        return -1;
+    }
+    
+    // Calculate data size
+    uint32_t data_size = count * sizeof(uint16_t);
+    uint32_t total_size = sizeof(CaptureHeader) + data_size;
+    
+    if (total_size > CAPTURE_SLOT_SIZE) {
+        printf("FlashStorage: Data too large (%lu bytes > %lu bytes)\n", 
+               static_cast<unsigned long>(total_size), 
+               static_cast<unsigned long>(CAPTURE_SLOT_SIZE));
+        return -1;
+    }
+    
+    // Find first empty slot or use next sequential slot
+    int slot = get_capture_count();
+    if (slot >= static_cast<int>(MAX_CAPTURES)) {
+        printf("FlashStorage: No free slots (max %lu captures)\n", 
+               static_cast<unsigned long>(MAX_CAPTURES));
+        return -1;
+    }
+    
+    printf("FlashStorage: Writing %lu samples to slot %d...\n", 
+           static_cast<unsigned long>(count), slot);
+    
+    // Calculate flash offset for this slot
+    uint32_t slot_offset = DATA_FLASH_OFFSET + (slot * CAPTURE_SLOT_SIZE);
+    
+    // Create header
+    CaptureHeader header;
+    header.magic = 0x41444353;  // "ADCS"
+    header.version = 1;
+    header.sample_rate = 5000;
+    header.sample_count = count;
+    header.timestamp = timestamp;
+    header.checksum = crc32((const uint8_t*)samples, data_size);
+    
+    // Prepare write buffer (header + data)
+    // Must be aligned to 256-byte boundary for flash programming
+    uint8_t* write_buffer = new uint8_t[total_size];
+    if (write_buffer == nullptr) {
+        printf("FlashStorage: Failed to allocate write buffer\n");
+        return -1;
+    }
+    
+    memcpy(write_buffer, &header, sizeof(CaptureHeader));
+    memcpy(write_buffer + sizeof(CaptureHeader), samples, data_size);
+    
+    // Disable interrupts during flash operations
+    uint32_t ints = save_and_disable_interrupts();
+    
+    // Erase flash sector(s)
+    // Flash sectors are 4KB, must erase before writing
+    uint32_t erase_size = ((total_size + FLASH_SECTOR_SIZE - 1) / FLASH_SECTOR_SIZE) * FLASH_SECTOR_SIZE;
+    printf("FlashStorage: Erasing %lu bytes...\n", static_cast<unsigned long>(erase_size));
+    flash_range_erase(slot_offset, erase_size);
+    
+    // Write data (256 bytes at a time)
+    // Flash programming requires 256-byte alignment
+    uint32_t bytes_written = 0;
+    while (bytes_written < total_size) {
+        uint32_t chunk_size = (total_size - bytes_written) > FLASH_PAGE_SIZE ? 
+                               FLASH_PAGE_SIZE : (total_size - bytes_written);
+        
+        // Pad to 256 bytes if needed
+        if (chunk_size < FLASH_PAGE_SIZE) {
+            uint8_t padded[FLASH_PAGE_SIZE] = {0xFF};  // Flash erased state is 0xFF
+            memcpy(padded, write_buffer + bytes_written, chunk_size);
+            flash_range_program(slot_offset + bytes_written, padded, FLASH_PAGE_SIZE);
+        } else {
+            flash_range_program(slot_offset + bytes_written, write_buffer + bytes_written, FLASH_PAGE_SIZE);
+        }
+        
+        bytes_written += FLASH_PAGE_SIZE;
+    }
+    
+    // Re-enable interrupts
+    restore_interrupts(ints);
+    
+    delete[] write_buffer;
+    
+    printf("FlashStorage: Write complete, slot %d\n", slot);
+    
+    // Verify write
+    if (!verify_capture(slot)) {
+        printf("FlashStorage: WARNING - Verification failed for slot %d\n", slot);
+        return -1;
+    }
+    
+    return slot;
+}
+
+bool read_capture(int slot, CaptureHeader* header, const uint16_t** samples) {
+    if (slot < 0 || slot >= static_cast<int>(MAX_CAPTURES)) {
+        printf("FlashStorage: Invalid slot %d\n", slot);
+        return false;
+    }
+    
+    // Calculate flash address for this slot
+    uint32_t slot_offset = DATA_FLASH_OFFSET + (slot * CAPTURE_SLOT_SIZE);
+    const uint8_t* flash_ptr = (const uint8_t*)(XIP_BASE + slot_offset);
+    
+    // Read header
+    memcpy(header, flash_ptr, sizeof(CaptureHeader));
+    
+    // Verify magic number
+    if (header->magic != 0x41444353) {
+        // Empty slot
+        return false;
+    }
+    
+    // Set samples pointer (memory-mapped flash)
+    *samples = (const uint16_t*)(flash_ptr + sizeof(CaptureHeader));
+    
+    return true;
+}
+
+int get_capture_count() {
+    int count = 0;
+    
+    for (int slot = 0; slot < static_cast<int>(MAX_CAPTURES); slot++) {
+        uint32_t slot_offset = DATA_FLASH_OFFSET + (slot * CAPTURE_SLOT_SIZE);
+        const uint32_t* magic_ptr = (const uint32_t*)(XIP_BASE + slot_offset);
+        
+        if (*magic_ptr == 0x41444353) {
+            count++;
+        } else {
+            // First empty slot - assume sequential writes
+            break;
+        }
+    }
+    
+    return count;
+}
+
+bool delete_capture(int slot) {
+    if (slot < 0 || slot >= static_cast<int>(MAX_CAPTURES)) {
+        return false;
+    }
+    
+    uint32_t slot_offset = DATA_FLASH_OFFSET + (slot * CAPTURE_SLOT_SIZE);
+    
+    printf("FlashStorage: Deleting slot %d...\n", slot);
+    
+    // Disable interrupts during flash operations
+    uint32_t ints = save_and_disable_interrupts();
+    
+    // Erase the slot
+    flash_range_erase(slot_offset, CAPTURE_SLOT_SIZE);
+    
+    // Re-enable interrupts
+    restore_interrupts(ints);
+    
+    printf("FlashStorage: Slot %d deleted\n", slot);
+    return true;
+}
+
+bool delete_all_captures() {
+    printf("FlashStorage: Deleting all captures...\n");
+    
+    // Disable interrupts during flash operations
+    uint32_t ints = save_and_disable_interrupts();
+    
+    // Erase entire data partition
+    flash_range_erase(DATA_FLASH_OFFSET, DATA_FLASH_SIZE);
+    
+    // Re-enable interrupts
+    restore_interrupts(ints);
+    
+    printf("FlashStorage: All captures deleted\n");
+    return true;
+}
+
+bool verify_capture(int slot) {
+    CaptureHeader header;
+    const uint16_t* samples;
+    
+    if (!read_capture(slot, &header, &samples)) {
+        return false;
+    }
+    
+    // Verify magic number
+    if (header.magic != 0x41444353) {
+        printf("FlashStorage: Invalid magic number in slot %d\n", slot);
+        return false;
+    }
+    
+    // Verify checksum
+    uint32_t data_size = header.sample_count * sizeof(uint16_t);
+    uint32_t calculated_crc = crc32((const uint8_t*)samples, data_size);
+    
+    if (calculated_crc != header.checksum) {
+        printf("FlashStorage: Checksum mismatch in slot %d (expected 0x%08lx, got 0x%08lx)\n", 
+               slot, static_cast<unsigned long>(header.checksum), 
+               static_cast<unsigned long>(calculated_crc));
+        return false;
+    }
+    
+    return true;
+}
+
+bool get_stats(FlashStats* stats) {
+    if (stats == nullptr) {
+        return false;
+    }
+    
+    stats->total_size = DATA_FLASH_SIZE;
+    stats->capture_count = get_capture_count();
+    stats->used_size = stats->capture_count * CAPTURE_SLOT_SIZE;
+    stats->free_size = DATA_FLASH_SIZE - stats->used_size;
+    
+    return true;
+}
+
+} // namespace FlashStorage
