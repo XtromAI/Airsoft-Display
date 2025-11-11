@@ -19,7 +19,7 @@
 #include "adc_config.h"
 
 // Pre-computed constants for ADC conversion (optimization for ARM Cortex-M0+)
-static constexpr float ADC_TO_VOLTAGE_SCALE = (ADCConfig::ADC_VREF * 1000.0f * ADCConfig::VDIV_RATIO) / (1 << ADCConfig::ADC_BITS);
+static constexpr float ADC_TO_VOLTAGE_SCALE = (ADCConfig::ADC_VREF * 1000.0f * ADCConfig::VDIV_RATIO * ADCConfig::ADC_CALIBRATION) / (1 << ADCConfig::ADC_BITS);
 // --- Pin assignments ---
 // Display pins (SPI1)
 #define PIN_SPI_SCK     14
@@ -350,7 +350,7 @@ int main() {
                 last_raw_avg = buffer_avg;
                 last_raw_min = raw_min;
                 last_raw_max = raw_max;
-                last_raw_adc_mv = (buffer_avg / static_cast<float>(ADCConfig::ADC_MAX)) * ADCConfig::ADC_VREF * 1000.0f;
+                last_raw_adc_mv = (buffer_avg / static_cast<float>(ADCConfig::ADC_MAX)) * ADCConfig::ADC_VREF * ADCConfig::ADC_CALIBRATION * 1000.0f;
                 
                 // Release the buffer back to DMA
                 dma_sampler.release_buffer();
@@ -401,8 +401,9 @@ int main() {
                 last_avg_voltage_mv = avg_voltage_mv;
             }
 
-            g_shared_data.current_voltage_mv = avg_voltage_mv;
-            g_shared_data.moving_average_mv = avg_voltage_mv;
+            // Add diode drop to show true battery voltage (pre-diode)
+            g_shared_data.current_voltage_mv = avg_voltage_mv + ADCConfig::DIODE_DROP_MV;
+            g_shared_data.moving_average_mv = avg_voltage_mv + ADCConfig::DIODE_DROP_MV;
             g_shared_data.filtered_voltage_adc = last_filtered_value;
             g_shared_data.core1_uptime_ms = core1_uptime_ms;
             g_shared_data.core1_loop_hz = core1_loop_hz;

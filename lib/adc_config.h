@@ -24,11 +24,25 @@ namespace ADCConfig {
     constexpr uint32_t ADC_MAX = (1 << ADC_BITS) - 1;  // 4095
     constexpr float ADC_VREF = 3.3f;
     
+    // ADC calibration factor
+    // Hardware: Diode → TL072 buffer → 100Ω series resistor → GP27 (ADC1)
+    // Measured: Actual pin 2.3V, voltage after diode 10.1V
+    // Current reading with 1.218 cal: 2.5V at pin, 10.7V displayed
+    // Adjustment needed: 2.3/2.5 = 0.92, so new cal: 1.218 × 0.92 = 1.12
+    // Verification: ADC_reading × 1.12 × 4.39 should equal 10.1V
+    constexpr float ADC_CALIBRATION = 1.12f;
+    
     // Voltage divider (11.1V LiPo → 3.3V max on ADC)
-    // Using 28kΩ + 10kΩ (actual hardware configuration)
-    constexpr float VDIV_R1 = 28000.0f;  // 28kΩ to battery
-    constexpr float VDIV_R2 = 10000.0f;  // 10kΩ to ground
-    constexpr float VDIV_RATIO = (VDIV_R1 + VDIV_R2) / VDIV_R2;  // 3.8
+    // Using 3.3kΩ + 1kΩ (nominal values)
+    // Note: Diode in series drops ~1.1V before divider (11.2V → 10.1V)
+    // Measured ratio: 10.1V after diode → 2.3V at ADC pin = 4.39:1
+    constexpr float VDIV_R1 = 3300.0f;  // 3.3kΩ to battery (nominal)
+    constexpr float VDIV_R2 = 1000.0f;  // 1kΩ to ground (nominal)
+    constexpr float VDIV_RATIO = 4.39f;  // Measured actual ratio (after diode drop)
+    
+    // Diode voltage drop compensation (to display pre-diode battery voltage)
+    // Measured: 11.2V battery → 10.1V after diode = 1.1V drop
+    constexpr float DIODE_DROP_MV = 1100.0f;  // Add back to show true battery voltage
 }
 
 // ==================================================
