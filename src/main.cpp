@@ -390,9 +390,7 @@ int main() {
         // Debug: Print message after collection completes
         static bool was_collecting = false;
         bool is_collecting_now = g_data_collector.is_collecting();
-        if (was_collecting && !is_collecting_now) {
-            printf("[Core1] Collection finished, resuming normal operation\n");
-        }
+        // Removed debug message for consistency
         was_collecting = is_collecting_now;
         
         // Check for serial input commands

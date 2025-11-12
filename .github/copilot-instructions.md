@@ -169,8 +169,8 @@ When adding section headers in code, use this format:
 
 - Inline simple getters/setters in headers for performance
 - Use `pragma once` for header guards
-- Place hardware-specific constants with `#define` or `constexpr`
-- Prefer `constexpr` over `#define` for type-safe constants
+- Place hardware-specific constants with macros or `constexpr`
+- Prefer `constexpr` over macros for type-safe constants
 - Keep platform-specific code isolated and documented
 
 ### Comments
