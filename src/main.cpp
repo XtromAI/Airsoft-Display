@@ -17,6 +17,9 @@
 #include "dma_adc_sampler.h"
 #include "voltage_filter.h"
 #include "adc_config.h"
+#include "flash_storage.h"
+#include "data_collector.h"
+#include "serial_commands.h"
 
 // Pre-computed constants for ADC conversion (optimization for ARM Cortex-M0+)
 static constexpr float ADC_TO_VOLTAGE_SCALE = (ADCConfig::ADC_VREF * 1000.0f * ADCConfig::VDIV_RATIO * ADCConfig::ADC_CALIBRATION) / (1 << ADCConfig::ADC_BITS);
@@ -65,6 +68,9 @@ typedef struct {
 // Global shared data and mutex
 volatile shared_data_t g_shared_data = {0};
 mutex_t g_data_mutex;
+
+// Data collection globals
+static DataCollector g_data_collector;
 
 // --- Core 0 Functions (Display & UI) ---
 
@@ -276,6 +282,14 @@ int main() {
     // Core 1: Initialize data acquisition and processing...
     printf("Core 1: Starting data acquisition and processing...\n");
     
+    // Initialize flash storage for data collection
+    FlashStorage::init();
+    printf("Core 1: Flash storage initialized\n");
+    
+    // Initialize serial command handler
+    SerialCommands::init(&g_data_collector);
+    printf("Core 1: Serial commands initialized (type HELP for commands)\n");
+    
     // Initialize DMA ADC sampler with 5 kHz sampling
     DMAADCSampler dma_sampler;
     if (!dma_sampler.init()) {
@@ -352,10 +366,18 @@ int main() {
                 last_raw_max = raw_max;
                 last_raw_adc_mv = (buffer_avg / static_cast<float>(ADCConfig::ADC_MAX)) * ADCConfig::ADC_VREF * ADCConfig::ADC_CALIBRATION * 1000.0f;
                 
+                // If collecting data, feed buffer to collector
+                if (g_data_collector.is_collecting()) {
+                    g_data_collector.process_buffer(buffer, buffer_size);
+                }
+                
                 // Release the buffer back to DMA
                 dma_sampler.release_buffer();
             }
         }
+        
+        // Check for serial input commands
+        SerialCommands::check_input();
         
         // Calculate uptime and loop frequency every second
         uint32_t core1_uptime_ms = absolute_time_diff_us(core1_start_time, get_absolute_time()) / 1000;

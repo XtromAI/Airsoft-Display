@@ -45,6 +45,7 @@ add_executable(airsoft-display
     lib/dma_adc_sampler.cpp
     lib/flash_storage.cpp
     lib/data_collector.cpp
+    lib/serial_commands.cpp
 )
     # add_executable(pico_examples pico_examples.cpp)
 

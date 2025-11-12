@@ -3,6 +3,7 @@
 #include "pico/stdlib.h"
 #include <stdio.h>
 #include <string.h>
+#include <new>
 
 // ==================================================
 // Constructor & Destructor
