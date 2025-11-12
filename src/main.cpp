@@ -86,6 +86,9 @@ void display_main() {
     // Kick the watchdog as soon as possible
     watchdog_update();
     printf("Core 0: Starting display and UI...\n");
+
+    // Allow this core to be safely paused during flash operations
+    multicore_lockout_victim_init();
     
     // Configure SPI pins
     gpio_set_function(PIN_SPI_SCK, GPIO_FUNC_SPI);
@@ -125,13 +128,19 @@ void display_main() {
     add_repeating_timer_ms(-17, display_update_timer_callback, NULL, &display_timer); // -17ms for ~60Hz
 
     // Core 0 main loop: Display and UI
+    absolute_time_t last_display_update = get_absolute_time();
     while (1) {
-        // Wait for timer to set update flag
-        if (!g_display_update_flag) {
+        // Wait for timer to set update flag, but also force update after 100ms timeout
+        // This prevents display from freezing if timer gets stuck
+        absolute_time_t current_time = get_absolute_time();
+        int64_t us_since_update = absolute_time_diff_us(last_display_update, current_time);
+        
+        if (!g_display_update_flag && us_since_update < 100000) {
             tight_loop_contents();
             continue;
         }
         g_display_update_flag = false;
+        last_display_update = current_time;
 
         // Read shared data from Core 1 (with mutex protection)
         bool data_available = false;
@@ -274,8 +283,10 @@ int main() {
         gpio_get_out_level(PIN_ADC_TEST_VREF),
         gpio_get(PIN_ADC_TEST_VREF));
 
-    // Launch display function on Core 0 (despite the confusing function name)
-    // Note: multicore_launch_core1() actually launches the function on Core 0, not Core 1!
+    // Prepare current core to participate in lockouts when necessary
+    multicore_lockout_victim_init();
+
+    // Launch display function on the second core
     multicore_launch_core1(display_main);
     // printf("Core 1: Core 0 launched for display and UI\n");
     
@@ -376,6 +387,14 @@ int main() {
             }
         }
         
+        // Debug: Print message after collection completes
+        static bool was_collecting = false;
+        bool is_collecting_now = g_data_collector.is_collecting();
+        if (was_collecting && !is_collecting_now) {
+            printf("[Core1] Collection finished, resuming normal operation\n");
+        }
+        was_collecting = is_collecting_now;
+        
         // Check for serial input commands
         SerialCommands::check_input();
         
@@ -389,6 +408,9 @@ int main() {
             core1_last_metrics_time_ms = core1_uptime_ms;
         }
 
+        // Debug logging disabled to reduce serial clutter
+        // Uncomment below to re-enable periodic debug output
+        /*
         if (core1_uptime_ms - core1_last_debug_log_ms >= 1000) {
             core1_last_debug_log_ms = core1_uptime_ms;
             uint fifo_level = adc_fifo_get_level();
@@ -413,6 +435,7 @@ int main() {
                    static_cast<unsigned long>(adc_fcs),
                    static_cast<unsigned long>(adc_cs));
         }
+        */
         
         // Update shared data (with mutex protection)
         if (mutex_try_enter(&g_data_mutex, NULL)) {

@@ -366,3 +366,4 @@ All major changes, research efforts, and design decisions must be documented in 
 - Prefer RAII and modern C++ features within embedded constraints
 - Keep real-time requirements in mind (no blocking operations in critical paths)
 - Always consider power consumption and performance impact
+- When using new Pico SDK APIs (e.g., multicore lockout, flash operations), review the official SDK documentation (`pico-sdk/src/...`) before integrating

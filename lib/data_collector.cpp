@@ -117,11 +117,14 @@ int DataCollector::finalize_collection() {
         
         // Free buffer to reclaim RAM
         free_buffer();
+        
+        printf("DataCollector: Collection complete, state reset to IDLE\n");
     } else {
         printf("DataCollector: Flash write failed\n");
         state = State::ERROR;
     }
     
+    printf("DataCollector: Returning to normal operation\n");
     return slot;
 }
 

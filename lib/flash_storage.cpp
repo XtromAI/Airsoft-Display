@@ -1,7 +1,9 @@
 #include "flash_storage.h"
 #include "hardware/flash.h"
 #include "hardware/sync.h"
+#include "hardware/watchdog.h"
 #include "pico/stdlib.h"
+#include "pico/multicore.h"
 #include <string.h>
 #include <stdio.h>
 
@@ -87,38 +89,67 @@ int write_capture(const uint16_t* samples, uint32_t count, uint32_t timestamp) {
     memcpy(write_buffer, &header, sizeof(CaptureHeader));
     memcpy(write_buffer + sizeof(CaptureHeader), samples, data_size);
     
-    // Disable interrupts during flash operations
-    uint32_t ints = save_and_disable_interrupts();
-    
-    // Erase flash sector(s)
-    // Flash sectors are 4KB, must erase before writing
+    // Calculate erase and write sizes
     uint32_t erase_size = ((total_size + FLASH_SECTOR_SIZE - 1) / FLASH_SECTOR_SIZE) * FLASH_SECTOR_SIZE;
-    printf("FlashStorage: Erasing %lu bytes...\n", static_cast<unsigned long>(erase_size));
+    printf("FlashStorage: Erasing %lu bytes at offset 0x%lx...\n", 
+           static_cast<unsigned long>(erase_size),
+           static_cast<unsigned long>(slot_offset));
+    
+    // CRITICAL: Disable watchdog before flash operations
+    // Flash erase can take >2 seconds which exceeds watchdog timeout
+    bool watchdog_was_enabled = watchdog_hw->ctrl & WATCHDOG_CTRL_ENABLE_BITS;
+    if (watchdog_was_enabled) {
+        hw_clear_bits(&watchdog_hw->ctrl, WATCHDOG_CTRL_ENABLE_BITS);
+    }
+
+    // Pause the other core to avoid flash contention
+    multicore_lockout_start_blocking();
+
+    // Both cores will freeze during flash operations
+    // This is unavoidable - code cannot execute from flash while it's being modified
+    uint32_t ints = save_and_disable_interrupts();
     flash_range_erase(slot_offset, erase_size);
+    restore_interrupts(ints);
+
+    printf("FlashStorage: Erase complete\n");
     
     // Write data (256 bytes at a time)
     // Flash programming requires 256-byte alignment
     uint32_t bytes_written = 0;
+    uint8_t padded[FLASH_PAGE_SIZE];  // Reusable padding buffer
+    
     while (bytes_written < total_size) {
         uint32_t chunk_size = (total_size - bytes_written) > FLASH_PAGE_SIZE ? 
                                FLASH_PAGE_SIZE : (total_size - bytes_written);
         
+        const uint8_t* data_to_write;
+        
         // Pad to 256 bytes if needed
         if (chunk_size < FLASH_PAGE_SIZE) {
-            uint8_t padded[FLASH_PAGE_SIZE] = {0xFF};  // Flash erased state is 0xFF
+            memset(padded, 0xFF, FLASH_PAGE_SIZE);  // Flash erased state
             memcpy(padded, write_buffer + bytes_written, chunk_size);
-            flash_range_program(slot_offset + bytes_written, padded, FLASH_PAGE_SIZE);
+            data_to_write = padded;
         } else {
-            flash_range_program(slot_offset + bytes_written, write_buffer + bytes_written, FLASH_PAGE_SIZE);
+            data_to_write = write_buffer + bytes_written;
         }
+        
+        // Disable interrupts and write this page
+        ints = save_and_disable_interrupts();
+        flash_range_program(slot_offset + bytes_written, data_to_write, FLASH_PAGE_SIZE);
+        restore_interrupts(ints);
         
         bytes_written += FLASH_PAGE_SIZE;
     }
     
-    // Re-enable interrupts
-    restore_interrupts(ints);
-    
     delete[] write_buffer;
+    
+    // Release the other core now that flash operations are done
+    multicore_lockout_end_blocking();
+
+    // Re-enable watchdog if it was enabled before
+    if (watchdog_was_enabled) {
+        watchdog_enable(2000, 1);  // Re-enable with 2s timeout
+    }
     
     printf("FlashStorage: Write complete, slot %d\n", slot);
     
@@ -183,14 +214,20 @@ bool delete_capture(int slot) {
     
     printf("FlashStorage: Deleting slot %d...\n", slot);
     
-    // Disable interrupts during flash operations
+    bool watchdog_was_enabled = watchdog_hw->ctrl & WATCHDOG_CTRL_ENABLE_BITS;
+    if (watchdog_was_enabled) {
+        hw_clear_bits(&watchdog_hw->ctrl, WATCHDOG_CTRL_ENABLE_BITS);
+    }
+
+    multicore_lockout_start_blocking();
     uint32_t ints = save_and_disable_interrupts();
-    
-    // Erase the slot
     flash_range_erase(slot_offset, CAPTURE_SLOT_SIZE);
-    
-    // Re-enable interrupts
     restore_interrupts(ints);
+    multicore_lockout_end_blocking();
+
+    if (watchdog_was_enabled) {
+        watchdog_enable(2000, 1);
+    }
     
     printf("FlashStorage: Slot %d deleted\n", slot);
     return true;
@@ -199,14 +236,20 @@ bool delete_capture(int slot) {
 bool delete_all_captures() {
     printf("FlashStorage: Deleting all captures...\n");
     
-    // Disable interrupts during flash operations
+    bool watchdog_was_enabled = watchdog_hw->ctrl & WATCHDOG_CTRL_ENABLE_BITS;
+    if (watchdog_was_enabled) {
+        hw_clear_bits(&watchdog_hw->ctrl, WATCHDOG_CTRL_ENABLE_BITS);
+    }
+
+    multicore_lockout_start_blocking();
     uint32_t ints = save_and_disable_interrupts();
-    
-    // Erase entire data partition
     flash_range_erase(DATA_FLASH_OFFSET, DATA_FLASH_SIZE);
-    
-    // Re-enable interrupts
     restore_interrupts(ints);
+    multicore_lockout_end_blocking();
+
+    if (watchdog_was_enabled) {
+        watchdog_enable(2000, 1);
+    }
     
     printf("FlashStorage: All captures deleted\n");
     return true;
