@@ -169,8 +169,8 @@ When adding section headers in code, use this format:
 
 - Inline simple getters/setters in headers for performance
 - Use `pragma once` for header guards
-- Place hardware-specific constants with `#define` or `constexpr`
-- Prefer `constexpr` over `#define` for type-safe constants
+- Place hardware-specific constants with macros or `constexpr`
+- Prefer `constexpr` over macros for type-safe constants
 - Keep platform-specific code isolated and documented
 
 ### Comments
@@ -366,3 +366,4 @@ All major changes, research efforts, and design decisions must be documented in 
 - Prefer RAII and modern C++ features within embedded constraints
 - Keep real-time requirements in mind (no blocking operations in critical paths)
 - Always consider power consumption and performance impact
+- When using new Pico SDK APIs (e.g., multicore lockout, flash operations), review the official SDK documentation (`pico-sdk/src/...`) before integrating

@@ -17,6 +17,9 @@
 #include "dma_adc_sampler.h"
 #include "voltage_filter.h"
 #include "adc_config.h"
+#include "flash_storage.h"
+#include "data_collector.h"
+#include "serial_commands.h"
 
 // Pre-computed constants for ADC conversion (optimization for ARM Cortex-M0+)
 static constexpr float ADC_TO_VOLTAGE_SCALE = (ADCConfig::ADC_VREF * 1000.0f * ADCConfig::VDIV_RATIO * ADCConfig::ADC_CALIBRATION) / (1 << ADCConfig::ADC_BITS);
@@ -66,6 +69,9 @@ typedef struct {
 volatile shared_data_t g_shared_data = {0};
 mutex_t g_data_mutex;
 
+// Data collection globals
+static DataCollector g_data_collector;
+
 // --- Core 0 Functions (Display & UI) ---
 
 // Volatile flag set by timer interrupt to trigger display update
@@ -80,6 +86,9 @@ void display_main() {
     // Kick the watchdog as soon as possible
     watchdog_update();
     printf("Core 0: Starting display and UI...\n");
+
+    // Allow this core to be safely paused during flash operations
+    multicore_lockout_victim_init();
     
     // Configure SPI pins
     gpio_set_function(PIN_SPI_SCK, GPIO_FUNC_SPI);
@@ -119,13 +128,19 @@ void display_main() {
     add_repeating_timer_ms(-17, display_update_timer_callback, NULL, &display_timer); // -17ms for ~60Hz
 
     // Core 0 main loop: Display and UI
+    absolute_time_t last_display_update = get_absolute_time();
     while (1) {
-        // Wait for timer to set update flag
-        if (!g_display_update_flag) {
+        // Wait for timer to set update flag, but also force update after 100ms timeout
+        // This prevents display from freezing if timer gets stuck
+        absolute_time_t current_time = get_absolute_time();
+        int64_t us_since_update = absolute_time_diff_us(last_display_update, current_time);
+        
+        if (!g_display_update_flag && us_since_update < 100000) {
             tight_loop_contents();
             continue;
         }
         g_display_update_flag = false;
+        last_display_update = current_time;
 
         // Read shared data from Core 1 (with mutex protection)
         bool data_available = false;
@@ -268,13 +283,23 @@ int main() {
         gpio_get_out_level(PIN_ADC_TEST_VREF),
         gpio_get(PIN_ADC_TEST_VREF));
 
-    // Launch display function on Core 0 (despite the confusing function name)
-    // Note: multicore_launch_core1() actually launches the function on Core 0, not Core 1!
+    // Prepare current core to participate in lockouts when necessary
+    multicore_lockout_victim_init();
+
+    // Launch display function on the second core
     multicore_launch_core1(display_main);
     // printf("Core 1: Core 0 launched for display and UI\n");
     
     // Core 1: Initialize data acquisition and processing...
     printf("Core 1: Starting data acquisition and processing...\n");
+    
+    // Initialize flash storage for data collection
+    FlashStorage::init();
+    printf("Core 1: Flash storage initialized\n");
+    
+    // Initialize serial command handler
+    SerialCommands::init(&g_data_collector);
+    printf("Core 1: Serial commands initialized (type HELP for commands)\n");
     
     // Initialize DMA ADC sampler with 5 kHz sampling
     DMAADCSampler dma_sampler;
@@ -352,10 +377,24 @@ int main() {
                 last_raw_max = raw_max;
                 last_raw_adc_mv = (buffer_avg / static_cast<float>(ADCConfig::ADC_MAX)) * ADCConfig::ADC_VREF * ADCConfig::ADC_CALIBRATION * 1000.0f;
                 
+                // If collecting data, feed buffer to collector
+                if (g_data_collector.is_collecting()) {
+                    g_data_collector.process_buffer(buffer, buffer_size);
+                }
+                
                 // Release the buffer back to DMA
                 dma_sampler.release_buffer();
             }
         }
+        
+        // Debug: Print message after collection completes
+        static bool was_collecting = false;
+        bool is_collecting_now = g_data_collector.is_collecting();
+        // Removed debug message for consistency
+        was_collecting = is_collecting_now;
+        
+        // Check for serial input commands
+        SerialCommands::check_input();
         
         // Calculate uptime and loop frequency every second
         uint32_t core1_uptime_ms = absolute_time_diff_us(core1_start_time, get_absolute_time()) / 1000;
@@ -367,6 +406,9 @@ int main() {
             core1_last_metrics_time_ms = core1_uptime_ms;
         }
 
+        // Debug logging disabled to reduce serial clutter
+        // Uncomment below to re-enable periodic debug output
+        /*
         if (core1_uptime_ms - core1_last_debug_log_ms >= 1000) {
             core1_last_debug_log_ms = core1_uptime_ms;
             uint fifo_level = adc_fifo_get_level();
@@ -391,6 +433,7 @@ int main() {
                    static_cast<unsigned long>(adc_fcs),
                    static_cast<unsigned long>(adc_cs));
         }
+        */
         
         // Update shared data (with mutex protection)
         if (mutex_try_enter(&g_data_mutex, NULL)) {
