@@ -349,6 +349,12 @@ int main() {
                 uint32_t raw_sum = 0;
                 uint16_t raw_min = 0xFFFF;
                 uint16_t raw_max = 0;
+                
+                // Temporary buffer for filtered samples (only allocated if collecting)
+                uint16_t* filtered_buffer = nullptr;
+                if (g_data_collector.is_collecting()) {
+                    filtered_buffer = new (std::nothrow) uint16_t[buffer_size];
+                }
 
                 // Process all samples in the buffer through the filter chain
                 for (uint32_t i = 0; i < buffer_size; ++i) {
@@ -360,6 +366,15 @@ int main() {
                     // Filter the raw ADC sample
                     float filtered_adc = voltage_filter.process(sample);
                     last_filtered_value = filtered_adc;
+                    
+                    // Store filtered sample for data collection (scaled back to uint16_t)
+                    if (filtered_buffer != nullptr) {
+                        // Clamp to 12-bit range and round
+                        float clamped = (filtered_adc < 0.0f) ? 0.0f : 
+                                       (filtered_adc > ADCConfig::ADC_MAX) ? static_cast<float>(ADCConfig::ADC_MAX) : 
+                                       filtered_adc;
+                        filtered_buffer[i] = static_cast<uint16_t>(clamped + 0.5f);
+                    }
                     
                     // Convert to voltage (millivolts) using pre-computed combined scale factor
                     float voltage_mv = filtered_adc * ADC_TO_VOLTAGE_SCALE;
@@ -377,9 +392,14 @@ int main() {
                 last_raw_max = raw_max;
                 last_raw_adc_mv = (buffer_avg / static_cast<float>(ADCConfig::ADC_MAX)) * ADCConfig::ADC_VREF * ADCConfig::ADC_CALIBRATION * 1000.0f;
                 
-                // If collecting data, feed buffer to collector
+                // If collecting data, feed buffers to collector
                 if (g_data_collector.is_collecting()) {
-                    g_data_collector.process_buffer(buffer, buffer_size);
+                    g_data_collector.process_buffer(buffer, filtered_buffer, buffer_size);
+                }
+                
+                // Clean up temporary filtered buffer
+                if (filtered_buffer != nullptr) {
+                    delete[] filtered_buffer;
                 }
                 
                 // Release the buffer back to DMA

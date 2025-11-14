@@ -39,14 +39,22 @@ bool init() {
 }
 
 int write_capture(const uint16_t* samples, uint32_t count, uint32_t timestamp) {
-    if (samples == nullptr || count == 0) {
+    // Legacy function - calls write_capture_dual with no filtered data
+    return write_capture_dual(samples, nullptr, count, timestamp);
+}
+
+int write_capture_dual(const uint16_t* raw_samples, const uint16_t* filtered_samples, 
+                       uint32_t count, uint32_t timestamp) {
+    if (raw_samples == nullptr || count == 0) {
         printf("FlashStorage: Invalid parameters\n");
         return -1;
     }
     
     // Calculate data size
-    uint32_t data_size = count * sizeof(uint16_t);
-    uint32_t total_size = sizeof(CaptureHeader) + data_size;
+    uint32_t raw_data_size = count * sizeof(uint16_t);
+    uint32_t filtered_data_size = (filtered_samples != nullptr) ? (count * sizeof(uint16_t)) : 0;
+    uint32_t total_data_size = raw_data_size + filtered_data_size;
+    uint32_t total_size = sizeof(CaptureHeader) + total_data_size;
     
     if (total_size > CAPTURE_SLOT_SIZE) {
         printf("FlashStorage: Data too large (%lu bytes > %lu bytes)\n", 
@@ -63,8 +71,13 @@ int write_capture(const uint16_t* samples, uint32_t count, uint32_t timestamp) {
         return -1;
     }
     
-    printf("FlashStorage: Writing %lu samples to slot %d...\n", 
-           static_cast<unsigned long>(count), slot);
+    if (filtered_samples != nullptr) {
+        printf("FlashStorage: Writing %lu raw + filtered samples to slot %d...\n", 
+               static_cast<unsigned long>(count), slot);
+    } else {
+        printf("FlashStorage: Writing %lu raw samples to slot %d...\n", 
+               static_cast<unsigned long>(count), slot);
+    }
     
     // Calculate flash offset for this slot
     uint32_t slot_offset = DATA_FLASH_OFFSET + (slot * CAPTURE_SLOT_SIZE);
@@ -72,13 +85,16 @@ int write_capture(const uint16_t* samples, uint32_t count, uint32_t timestamp) {
     // Create header
     CaptureHeader header;
     header.magic = 0x41444353;  // "ADCS"
-    header.version = 1;
+    header.version = (filtered_samples != nullptr) ? 2 : 1;
     header.sample_rate = 5000;
     header.sample_count = count;
     header.timestamp = timestamp;
-    header.checksum = crc32((const uint8_t*)samples, data_size);
+    header.checksum = crc32((const uint8_t*)raw_samples, raw_data_size);
+    header.has_filtered = (filtered_samples != nullptr) ? 1 : 0;
+    header.checksum_filt = (filtered_samples != nullptr) ? 
+                           crc32((const uint8_t*)filtered_samples, filtered_data_size) : 0;
     
-    // Prepare write buffer (header + data)
+    // Prepare write buffer (header + raw data + filtered data)
     // Must be aligned to 256-byte boundary for flash programming
     uint8_t* write_buffer = new uint8_t[total_size];
     if (write_buffer == nullptr) {
@@ -87,7 +103,11 @@ int write_capture(const uint16_t* samples, uint32_t count, uint32_t timestamp) {
     }
     
     memcpy(write_buffer, &header, sizeof(CaptureHeader));
-    memcpy(write_buffer + sizeof(CaptureHeader), samples, data_size);
+    memcpy(write_buffer + sizeof(CaptureHeader), raw_samples, raw_data_size);
+    if (filtered_samples != nullptr) {
+        memcpy(write_buffer + sizeof(CaptureHeader) + raw_data_size, 
+               filtered_samples, filtered_data_size);
+    }
     
     // Calculate erase and write sizes
     uint32_t erase_size = ((total_size + FLASH_SECTOR_SIZE - 1) / FLASH_SECTOR_SIZE) * FLASH_SECTOR_SIZE;
@@ -181,8 +201,42 @@ bool read_capture(int slot, CaptureHeader* header, const uint16_t** samples) {
         return false;
     }
     
-    // Set samples pointer (memory-mapped flash)
+    // Set samples pointer (memory-mapped flash) - always points to raw data
     *samples = (const uint16_t*)(flash_ptr + sizeof(CaptureHeader));
+    
+    return true;
+}
+
+bool read_capture_dual(int slot, CaptureHeader* header, 
+                       const uint16_t** raw_samples, const uint16_t** filtered_samples) {
+    if (slot < 0 || slot >= static_cast<int>(MAX_CAPTURES)) {
+        printf("FlashStorage: Invalid slot %d\n", slot);
+        return false;
+    }
+    
+    // Calculate flash address for this slot
+    uint32_t slot_offset = DATA_FLASH_OFFSET + (slot * CAPTURE_SLOT_SIZE);
+    const uint8_t* flash_ptr = (const uint8_t*)(XIP_BASE + slot_offset);
+    
+    // Read header
+    memcpy(header, flash_ptr, sizeof(CaptureHeader));
+    
+    // Verify magic number
+    if (header->magic != 0x41444353) {
+        // Empty slot
+        return false;
+    }
+    
+    // Set raw samples pointer (memory-mapped flash)
+    *raw_samples = (const uint16_t*)(flash_ptr + sizeof(CaptureHeader));
+    
+    // Set filtered samples pointer if present
+    if (header->version >= 2 && header->has_filtered == 1) {
+        uint32_t raw_data_size = header->sample_count * sizeof(uint16_t);
+        *filtered_samples = (const uint16_t*)(flash_ptr + sizeof(CaptureHeader) + raw_data_size);
+    } else {
+        *filtered_samples = nullptr;
+    }
     
     return true;
 }
