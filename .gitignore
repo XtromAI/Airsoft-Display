@@ -1,3 +1,8 @@
 build
 !.vscode/*
 /build
+
+# Python virtual environment
+venv/
+__pycache__/
+*.pyc
