@@ -100,8 +100,26 @@ def download_capture(ser, slot, output_file=None):
     
     # Parse and verify header
     if len(data) >= 24:
-        header = struct.unpack('<IIIIII', data[:24])
-        magic, version, sample_rate, sample_count, timestamp, checksum = header
+        # Read first 8 bytes to determine version
+        magic, version = struct.unpack('<II', data[:8])
+        
+        if version == 1:
+            header_size = 24
+            header = struct.unpack('<IIIIII', data[:24])
+            magic, version, sample_rate, sample_count, timestamp, checksum = header
+            has_filtered = 0
+            checksum_filt = 0
+        elif version == 2:
+            header_size = 32
+            if len(data) >= 32:
+                header = struct.unpack('<IIIIIIII', data[:32])
+                magic, version, sample_rate, sample_count, timestamp, checksum, has_filtered, checksum_filt = header
+            else:
+                print("ERROR: Truncated version 2 header")
+                return True
+        else:
+            print(f"ERROR: Unknown version {version}")
+            return True
         
         print(f"\nCapture Info:")
         print(f"  Magic:        0x{magic:08X} {'(valid)' if magic == 0x41444353 else '(INVALID!)'}")
@@ -110,21 +128,40 @@ def download_capture(ser, slot, output_file=None):
         print(f"  Sample Count: {sample_count}")
         print(f"  Timestamp:    {timestamp} ms")
         print(f"  Checksum:     0x{checksum:08X}")
+        if version >= 2:
+            print(f"  Has Filtered: {'Yes' if has_filtered else 'No'}")
+            if has_filtered:
+                print(f"  Filt Checksum: 0x{checksum_filt:08X}")
         
-        # Parse samples
-        sample_data = data[24:]
-        expected_samples = sample_count
-        actual_samples = len(sample_data) // 2
+        # Parse raw samples
+        raw_data_offset = header_size
+        raw_data_size = sample_count * 2
+        expected_raw_samples = sample_count
         
-        if actual_samples == expected_samples:
-            print(f"  Samples:      {actual_samples} (matches header)")
+        if len(data) >= raw_data_offset + raw_data_size:
+            actual_raw_samples = expected_raw_samples
+            print(f"  Raw Samples:  {actual_raw_samples} (matches header)")
         else:
-            print(f"  Samples:      {actual_samples} (MISMATCH: expected {expected_samples})")
+            actual_raw_samples = (len(data) - raw_data_offset) // 2
+            print(f"  Raw Samples:  {actual_raw_samples} (TRUNCATED: expected {expected_raw_samples})")
         
-        # Quick stats on samples
-        if actual_samples > 0:
-            samples = struct.unpack(f'<{actual_samples}H', sample_data[:actual_samples*2])
-            print(f"\nSample Statistics:")
+        # Parse filtered samples if present
+        if version >= 2 and has_filtered:
+            filt_data_offset = raw_data_offset + raw_data_size
+            filt_data_size = sample_count * 2
+            
+            if len(data) >= filt_data_offset + filt_data_size:
+                actual_filt_samples = sample_count
+                print(f"  Filt Samples: {actual_filt_samples} (matches header)")
+            else:
+                actual_filt_samples = (len(data) - filt_data_offset) // 2
+                print(f"  Filt Samples: {actual_filt_samples} (TRUNCATED: expected {sample_count})")
+        
+        # Quick stats on raw samples
+        if actual_raw_samples > 0:
+            raw_sample_data = data[raw_data_offset:raw_data_offset + actual_raw_samples * 2]
+            samples = struct.unpack(f'<{actual_raw_samples}H', raw_sample_data)
+            print(f"\nRaw Sample Statistics:")
             print(f"  Min ADC:      {min(samples)}")
             print(f"  Max ADC:      {max(samples)}")
             print(f"  Mean ADC:     {sum(samples)//len(samples)}")
