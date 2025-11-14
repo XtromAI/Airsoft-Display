@@ -43,6 +43,9 @@ add_executable(airsoft-display
     lib/sh1107-pico/src/wave_demo.cpp
     lib/voltage_filter.cpp
     lib/dma_adc_sampler.cpp
+    lib/flash_storage.cpp
+    lib/data_collector.cpp
+    lib/serial_commands.cpp
 )
     # add_executable(pico_examples pico_examples.cpp)
 
@@ -90,6 +93,7 @@ target_link_libraries(airsoft-display
         hardware_watchdog
         hardware_clocks
         hardware_adc
+        hardware_flash
         pico_multicore
         pico_sync
         )
