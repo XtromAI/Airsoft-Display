@@ -20,6 +20,7 @@
 #include "flash_storage.h"
 #include "data_collector.h"
 #include "serial_commands.h"
+#include <new>
 
 // Pre-computed constants for ADC conversion (optimization for ARM Cortex-M0+)
 static constexpr float ADC_TO_VOLTAGE_SCALE = (ADCConfig::ADC_VREF * 1000.0f * ADCConfig::VDIV_RATIO * ADCConfig::ADC_CALIBRATION) / (1 << ADCConfig::ADC_BITS);
