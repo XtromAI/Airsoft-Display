@@ -14,8 +14,8 @@ namespace FlashStorage {
     // Using last 1MB of flash (Pico has 2MB total)
     constexpr uint32_t DATA_FLASH_OFFSET = (1 * 1024 * 1024);  // 1MB offset from start
     constexpr uint32_t DATA_FLASH_SIZE = (1 * 1024 * 1024);    // 1MB total size
-    constexpr uint32_t MAX_CAPTURES = 10;                       // Up to 10 captures
-    constexpr uint32_t CAPTURE_SLOT_SIZE = (128 * 1024);       // 128KB per slot (room for header + 50k samples)
+    constexpr uint32_t MAX_CAPTURES = 4;                        // Up to 4 captures (larger slots for filtered data)
+    constexpr uint32_t CAPTURE_SLOT_SIZE = (DATA_FLASH_SIZE / MAX_CAPTURES); // 256KB per slot (header + raw/filtered samples)
     
     // File header structure (32 bytes)
     struct CaptureHeader {

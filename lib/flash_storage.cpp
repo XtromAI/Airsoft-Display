@@ -94,21 +94,6 @@ int write_capture_dual(const uint16_t* raw_samples, const uint16_t* filtered_sam
     header.checksum_filt = (filtered_samples != nullptr) ? 
                            crc32((const uint8_t*)filtered_samples, filtered_data_size) : 0;
     
-    // Prepare write buffer (header + raw data + filtered data)
-    // Must be aligned to 256-byte boundary for flash programming
-    uint8_t* write_buffer = new uint8_t[total_size];
-    if (write_buffer == nullptr) {
-        printf("FlashStorage: Failed to allocate write buffer\n");
-        return -1;
-    }
-    
-    memcpy(write_buffer, &header, sizeof(CaptureHeader));
-    memcpy(write_buffer + sizeof(CaptureHeader), raw_samples, raw_data_size);
-    if (filtered_samples != nullptr) {
-        memcpy(write_buffer + sizeof(CaptureHeader) + raw_data_size, 
-               filtered_samples, filtered_data_size);
-    }
-    
     // Calculate erase and write sizes
     uint32_t erase_size = ((total_size + FLASH_SECTOR_SIZE - 1) / FLASH_SECTOR_SIZE) * FLASH_SECTOR_SIZE;
     printf("FlashStorage: Erasing %lu bytes at offset 0x%lx...\n", 
@@ -133,35 +118,70 @@ int write_capture_dual(const uint16_t* raw_samples, const uint16_t* filtered_sam
 
     printf("FlashStorage: Erase complete\n");
     
-    // Write data (256 bytes at a time)
-    // Flash programming requires 256-byte alignment
+    // Write data (256 bytes at a time) without staging the entire capture in RAM.
     uint32_t bytes_written = 0;
-    uint8_t padded[FLASH_PAGE_SIZE];  // Reusable padding buffer
-    
-    while (bytes_written < total_size) {
-        uint32_t chunk_size = (total_size - bytes_written) > FLASH_PAGE_SIZE ? 
-                               FLASH_PAGE_SIZE : (total_size - bytes_written);
-        
-        const uint8_t* data_to_write;
-        
-        // Pad to 256 bytes if needed
-        if (chunk_size < FLASH_PAGE_SIZE) {
-            memset(padded, 0xFF, FLASH_PAGE_SIZE);  // Flash erased state
-            memcpy(padded, write_buffer + bytes_written, chunk_size);
-            data_to_write = padded;
-        } else {
-            data_to_write = write_buffer + bytes_written;
+    uint8_t page_buffer[FLASH_PAGE_SIZE];
+
+    auto fill_page = [&](uint32_t global_offset, uint32_t bytes_to_copy) {
+        uint32_t copied = 0;
+        while (copied < bytes_to_copy) {
+            uint32_t current_offset = global_offset + copied;
+            uint8_t* dest_ptr = page_buffer + copied;
+            uint32_t remaining = bytes_to_copy - copied;
+
+            if (current_offset < sizeof(CaptureHeader)) {
+                uint32_t header_offset = current_offset;
+                uint32_t available = sizeof(CaptureHeader) - header_offset;
+                uint32_t copy_len = (available < remaining) ? available : remaining;
+                memcpy(dest_ptr,
+                       reinterpret_cast<const uint8_t*>(&header) + header_offset,
+                       copy_len);
+                copied += copy_len;
+                continue;
+            }
+
+            uint32_t raw_offset = current_offset - sizeof(CaptureHeader);
+            if (raw_offset < raw_data_size) {
+                uint32_t available = raw_data_size - raw_offset;
+                uint32_t copy_len = (available < remaining) ? available : remaining;
+                memcpy(dest_ptr,
+                       reinterpret_cast<const uint8_t*>(raw_samples) + raw_offset,
+                       copy_len);
+                copied += copy_len;
+                continue;
+            }
+
+            if (filtered_data_size > 0) {
+                uint32_t filt_offset = current_offset - sizeof(CaptureHeader) - raw_data_size;
+                if (filt_offset < filtered_data_size) {
+                    uint32_t available = filtered_data_size - filt_offset;
+                    uint32_t copy_len = (available < remaining) ? available : remaining;
+                    memcpy(dest_ptr,
+                           reinterpret_cast<const uint8_t*>(filtered_samples) + filt_offset,
+                           copy_len);
+                    copied += copy_len;
+                    continue;
+                }
+            }
+
+            // Should not reach here
+            break;
         }
-        
-        // Disable interrupts and write this page
+    };
+
+    while (bytes_written < total_size) {
+        uint32_t chunk_size = (total_size - bytes_written) > FLASH_PAGE_SIZE ?
+                               FLASH_PAGE_SIZE : (total_size - bytes_written);
+
+        memset(page_buffer, 0xFF, FLASH_PAGE_SIZE);
+        fill_page(bytes_written, chunk_size);
+
         ints = save_and_disable_interrupts();
-        flash_range_program(slot_offset + bytes_written, data_to_write, FLASH_PAGE_SIZE);
+        flash_range_program(slot_offset + bytes_written, page_buffer, FLASH_PAGE_SIZE);
         restore_interrupts(ints);
-        
+
         bytes_written += FLASH_PAGE_SIZE;
     }
-    
-    delete[] write_buffer;
     
     // Release the other core now that flash operations are done
     multicore_lockout_end_blocking();
