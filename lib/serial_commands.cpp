@@ -60,12 +60,15 @@ void SerialCommands::handle_command(const char* cmd) {
         
         for (int i = 0; i < count; i++) {
             FlashStorage::CaptureHeader header;
-            const uint16_t* samples;
+            const uint16_t* raw_samples;
+            const uint16_t* filtered_samples;
             
-            if (FlashStorage::read_capture(i, &header, &samples)) {
-                printf("Slot %d: %lu samples, timestamp: %lu ms\n", 
+            if (FlashStorage::read_capture_dual(i, &header, &raw_samples, &filtered_samples)) {
+                printf("Slot %d: %lu samples, v%lu, %s, timestamp: %lu ms\n", 
                        i, 
                        static_cast<unsigned long>(header.sample_count),
+                       static_cast<unsigned long>(header.version),
+                       (header.has_filtered ? "raw+filtered" : "raw only"),
                        static_cast<unsigned long>(header.timestamp));
             }
         }
@@ -79,16 +82,18 @@ void SerialCommands::handle_command(const char* cmd) {
         int slot = atoi(cmd + 9);
         
         FlashStorage::CaptureHeader header;
-        const uint16_t* samples;
+        const uint16_t* raw_samples;
+        const uint16_t* filtered_samples;
         
-        if (!FlashStorage::read_capture(slot, &header, &samples)) {
+        if (!FlashStorage::read_capture_dual(slot, &header, &raw_samples, &filtered_samples)) {
             printf("ERROR: Invalid slot %d\n", slot);
             return;
         }
         
-        // Calculate total size (header + samples)
-        uint32_t total_size = sizeof(FlashStorage::CaptureHeader) + 
-                              (header.sample_count * sizeof(uint16_t));
+        // Calculate total size (header + raw samples + filtered samples if present)
+        uint32_t raw_data_size = header.sample_count * sizeof(uint16_t);
+        uint32_t filtered_data_size = (header.version >= 2 && header.has_filtered) ? raw_data_size : 0;
+        uint32_t total_size = sizeof(FlashStorage::CaptureHeader) + raw_data_size + filtered_data_size;
         
         printf("START %lu\n", static_cast<unsigned long>(total_size));
         fflush(stdout);
@@ -96,8 +101,14 @@ void SerialCommands::handle_command(const char* cmd) {
         // Send header
         fwrite(&header, sizeof(FlashStorage::CaptureHeader), 1, stdout);
         
-        // Send samples
-        fwrite(samples, sizeof(uint16_t), header.sample_count, stdout);
+        // Send raw samples
+        fwrite(raw_samples, sizeof(uint16_t), header.sample_count, stdout);
+        
+        // Send filtered samples if present
+        if (filtered_samples != nullptr) {
+            fwrite(filtered_samples, sizeof(uint16_t), header.sample_count, stdout);
+        }
+        
         fflush(stdout);
         
         printf("END\n");
