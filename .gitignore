@@ -6,11 +6,3 @@ build
 venv/
 __pycache__/
 *.pyc
-
-# Data capture files (binary data from ADC sampling)
-*.bin
-capture_*.csv
-capture_*.png
-
-# Analysis output
-analysis_results.png
