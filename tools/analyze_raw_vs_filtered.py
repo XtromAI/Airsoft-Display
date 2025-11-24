@@ -175,7 +175,9 @@ def estimate_phase_lag(fs, cutoff_hz):
     phase_deg = np.degrees(phase_rad)
     
     # Convert phase to time delay
-    delay_ms = -(phase_deg / 360.0) * (1000.0 / test_freq)
+    # Group delay = -phase / (2*pi*f) = -phase_deg / (360 * f) * 1000 [ms]
+    # Since phase_deg is negative, we use abs() to get positive delay
+    delay_ms = abs(phase_deg / 360.0) * (1000.0 / test_freq)
     
     return delay_ms, phase_deg
 
