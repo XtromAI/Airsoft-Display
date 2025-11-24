@@ -107,8 +107,8 @@ The embedded firmware implements a two-stage filter chain:
 
 At 50 Hz (typical shot event frequency):
 - **Median Filter:** ~0.5 ms (group delay ≈ window/2)
-- **IIR Low-Pass:** ~1.5 ms (phase lag = -arctan(50Hz/100Hz) ≈ -26.6°)
-- **Total Delay:** ~2.0 ms
+- **IIR Low-Pass:** ~1.3 ms (group delay = 1/(2π·fc·(1+(f/fc)²)))
+- **Total Delay:** ~1.8 ms
 
 ### Shot Detection Implications
 
@@ -116,7 +116,7 @@ Expected shot event characteristics:
 - **Duration:** 10-50 ms (motor current draw)
 - **Magnitude:** 0.5-2.0 V drop (5-20% of battery voltage)
 
-**Verdict:** ✅ **2.0 ms delay is negligible** compared to 10-50 ms shot duration (4-20% of event duration)
+**Verdict:** ✅ **1.8 ms delay is negligible** compared to 10-50 ms shot duration (3.6-18% of event duration)
 
 ---
 
@@ -184,8 +184,8 @@ The analysis script (`tools/analyze_raw_vs_filtered.py`) implements Python versi
    - Preserves signal content below 100 Hz (shot detection band)
 
 3. **Phase delay is acceptable:**
-   - Total delay of ~2.0 ms is negligible for 10-50 ms shot events
-   - Represents only 4-20% of shot duration
+   - Total delay of ~1.8 ms is negligible for 10-50 ms shot events
+   - Represents only 3.6-18% of shot duration
    - Will not impact shot detection accuracy
 
 4. **No hardware filtering needed:**

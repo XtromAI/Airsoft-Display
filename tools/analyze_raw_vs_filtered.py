@@ -170,14 +170,17 @@ def estimate_phase_lag(fs, cutoff_hz):
     """Estimate filter phase lag at 50 Hz (typical shot frequency)."""
     # For 1st order IIR Butterworth at frequency f:
     # Phase = -arctan(f / fc)
+    # Group delay = 1 / (2*pi*fc * (1 + (f/fc)^2))
     test_freq = 50.0  # Hz (typical shot event frequency)
+    
+    # Calculate phase lag
     phase_rad = -np.arctan(test_freq / cutoff_hz)
     phase_deg = np.degrees(phase_rad)
     
-    # Convert phase to time delay
-    # Group delay = -phase / (2*pi*f) = -phase_deg / (360 * f) * 1000 [ms]
-    # Since phase_deg is negative, we use abs() to get positive delay
-    delay_ms = abs(phase_deg / 360.0) * (1000.0 / test_freq)
+    # Calculate group delay using proper formula
+    omega_c = 2 * np.pi * cutoff_hz
+    group_delay_s = 1 / (omega_c * (1 + (test_freq / cutoff_hz)**2))
+    delay_ms = group_delay_s * 1000  # Convert to milliseconds
     
     return delay_ms, phase_deg
 
