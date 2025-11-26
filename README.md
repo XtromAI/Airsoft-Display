@@ -22,7 +22,7 @@ This is an embedded hardware project for use with an F2000 model airsoft rifle. 
     </td>
     <td align="center" style="font-size: 2em;">&rarr;</td>
     <td align="center">
-      <h2>Project</h2><(Airsoft)
+      <h2>Project</h2>(Airsoft)
     </td>
   </tr>
   <tr>
