@@ -18,11 +18,11 @@ This is an embedded hardware project for use with an F2000 model airsoft rifle. 
 <table>
   <tr>
     <td align="center">
-      <span style="font-size:2em; font-weight:bold;">Inspiration</span><br>(Halo)
+      <h2>Inspiration</h2>(Halo)
     </td>
     <td align="center" style="font-size: 2em;">&rarr;</td>
     <td align="center">
-      <span style="font-size:2em; font-weight:bold;">Project</span><br>(Real)
+      <h2>Project</h2><(Airsoft)
     </td>
   </tr>
   <tr>
