@@ -127,7 +127,6 @@ cp airsoft-display.uf2 /media/$USER/RPI-RP2/
 3. Use the "Compile Project" task (Ctrl+Shift+B)
 4. Use the "Flash" task to upload firmware
 
-**Note:** Do not use the "Run Project" task - see [copilot-instructions.md](.github/copilot-instructions.md) for details.
 
 ## 📊 Data Collection
 
