@@ -72,7 +72,8 @@ This is an embedded hardware project for use with an F2000 model airsoft rifle. 
 - **Display:** SH1107 128x128 OLED (SPI mode)
 - **Power:** L7805CV voltage regulator (5V, 1A)
 - **Battery:** 11.1V 3S LiPo (airsoft standard)
-- **Voltage Divider:** 10kΩ and 28kΩ resistors
+- **Voltage Divider:** 1kΩ and 3kΩ resistors
+- **Signal Buffer:** Opamp buffer for clean signal
 
 ### Pin Configuration
 
