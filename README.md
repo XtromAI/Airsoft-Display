@@ -3,10 +3,23 @@
 [![License: CC BY-NC 4.0](https://img.shields.io/badge/License-CC%20BY--NC%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc/4.0/)
 [![Platform](https://img.shields.io/badge/platform-Raspberry%20Pi%20Pico-red.svg)](https://www.raspberrypi.com/products/raspberry-pi-pico/)
 [![Language](https://img.shields.io/badge/language-C%2B%2B17-blue.svg)](https://isocpp.org/)
+![Project Status](https://img.shields.io/badge/status-work%20in%20progress-orange)
 
 A real-time shot counter and battery monitor for airsoft guns built with the Raspberry Pi Pico (RP2040). Features a custom OLED display driver, high-speed ADC sampling with DMA, and dual-core architecture for parallel data acquisition and display rendering.
 
-![Project Status](https://img.shields.io/badge/status-work%20in%20progress-orange)
+## About This Repository
+
+This is an embedded hardware project for use with an F2000 model airsoft rifle. It's a bullpup style, reminiscent of Halo weapons like the BR55 Battle Rifle and MA40 Assault Rifle, both of which have built-in display with ammo counters. The device is unique from others that other makers have built because it is powered by the main airsoft gun LiPo battery through its balance charging port. This is also the basis for the shot counting and battery voltage monitoring features. It samples the battery voltage at 5kHz providing a stream of data to an algorithm that detects when shots are fired based on voltage drops. Overall, it's an efficient design that does not require any external sensors or secondary power supply.
+
+\- Xtrom
+
+## Photos
+
+<p align="center">
+    <img src="docs/images/ma40.jpg" alt="MA40 Airsoft Rifle" width="32%" style="display:inline-block; margin-right:1%;">
+    <img src="docs/images/f2000.jpg" alt="F2000 Airsoft Rifle" width="32%" style="display:inline-block; margin-right:1%;">
+    <img src="docs/images/display.jpg" alt="OLED Display Module" width="32%" style="display:inline-block;">
+</p>
 
 ## 🎯 Features
 
