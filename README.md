@@ -143,8 +143,6 @@ python tools/download_data.py /dev/ttyACM0 collect 10
 python tools/parse_capture.py capture_00000.bin
 ```
 
-See [QUICKSTART-DATA-COLLECTION.md](QUICKSTART-DATA-COLLECTION.md) for detailed instructions.
-
 ## 🏗️ Architecture
 
 ### Dual-Core Design
