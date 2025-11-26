@@ -248,7 +248,7 @@ See the [LICENSE](LICENSE) file for full details.
 
 ## 🙏 Acknowledgments
 
-- **Display Driver:** Inspired by the MicroPython SH1107 driver
+- **Display Driver:** Inspired by the MicroPython SH1107 driver by peter-l5 https://github.com/peter-l5/SH1107
 - **RP2040 Community:** Excellent documentation and examples from Raspberry Pi Foundation
 - **Airsoft Community:** For real-world testing and feedback
 
