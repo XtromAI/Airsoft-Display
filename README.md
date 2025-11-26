@@ -184,7 +184,7 @@ airsoft-display/
 │   └── data_collector.*        # Data collection system
 ├── docs/
 │   ├── hardware/               # Schematics and datasheets
-│   └── planning/               # Design documents and retrospectives
+│   └── devlog/                 # Design documents and retrospectives
 ├── tools/
 │   ├── download_data.py        # Data collection tool
 │   ├── parse_capture.py        # Data analysis tool
