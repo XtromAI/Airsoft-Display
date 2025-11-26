@@ -195,7 +195,7 @@ lib/
     bitmap_font.h             # Font interface
     sh1107_demo.cpp/.h        # Demo animations
     wave_demo.cpp/.h          # Wave animation
-docs/planning/
+docs/devlog/
   2025-01-15-design-guide.md             # Original design specification
   2025-10-31-PROJECT-STATUS.md           # Current implementation status
   *.md                                   # Additional documentation
@@ -307,7 +307,7 @@ mutex_exit(&g_data_mutex);
   - `pico-datasheet.pdf` - RP2040 microcontroller specifications
   - `SH1107Datasheet.pdf` - Display controller reference
   - `getting-started-with-pico.pdf` - Raspberry Pi Pico guide
-- **Project Documentation:** See `docs/planning/` directory
+- **Project Documentation:** See `docs/devlog/` directory
   - `2025-01-15-design-guide.md` - Original design spec
   - `2025-10-31-PROJECT-STATUS.md` - Current implementation status
   - `2025-10-31-RECONNECTION-GUIDE.md` - Quick project overview
@@ -318,7 +318,7 @@ mutex_exit(&g_data_mutex);
 
 ### Development and Research Documentation
 
-All major changes, research efforts, and design decisions must be documented in the `docs/planning/` directory following these standards:
+All major changes, research efforts, and design decisions must be documented in the `docs/devlog/` directory following these standards:
 
 **Naming Convention:**
 - Use date-prefixed format: `YYYY-MM-DD-description.md`

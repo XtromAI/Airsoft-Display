@@ -69,4 +69,4 @@ Based on this analysis, the current software filtering approach is optimal:
 - Difficult to tune after manufacturing
 - Current software approach is sufficient
 
-See **../../docs/planning/2025-11-14-filtering-analysis-recommendations.md** for detailed analysis and trade-offs.
+See **../../docs/devlog/2025-11-14-filtering-analysis-recommendations.md** for detailed analysis and trade-offs.

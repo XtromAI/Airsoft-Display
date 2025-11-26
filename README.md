@@ -197,8 +197,8 @@ airsoft-display/
 
 ## 📖 Documentation
 
-- [Project Status](docs/planning/2025-10-31-PROJECT-STATUS.md) - Current implementation status
-- [Reconnection Guide](docs/planning/2025-10-31-RECONNECTION-GUIDE.md) - Quick overview for returning contributors
+- [Project Status](docs/devlog/2025-10-31-PROJECT-STATUS.md) - Current implementation status
+- [Reconnection Guide](docs/devlog/2025-10-31-RECONNECTION-GUIDE.md) - Quick overview for returning contributors
 - [Hardware Documentation](docs/hardware/) - Schematics and component datasheets
 - [Display Driver API](lib/sh1107-pico/docs/) - Custom driver documentation
 - [Copilot Instructions](.github/copilot-instructions.md) - Development conventions
