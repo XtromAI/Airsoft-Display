@@ -66,7 +66,7 @@ See [docs/hardware/circuit-description.md](docs/hardware/circuit-description.md)
 
 ```bash
 # Clone the repository
-git clone https://github.com/xmbn/airsoft-display.git
+git clone https://github.com/XtromAI/airsoft-display.git
 cd airsoft-display
 
 # Build with CMake
@@ -213,8 +213,8 @@ See the [LICENSE](LICENSE) file for full details.
 
 ## 📬 Contact
 
-**Author:** xmbn  
-**Repository:** [github.com/xmbn/airsoft-display](https://github.com/xmbn/airsoft-display)
+**Author:** XtromAI  
+**Repository:** [github.com/XtromAI/airsoft-display](https://github.com/XtromAI/airsoft-display)
 
 ## 🗺️ Roadmap
 

@@ -1,6 +1,6 @@
 # ADC DMA Shot Detection Research
 **Date:** 2025-01-30  
-**Author:** Xris (xmbn)  
+**Author:** Xris (XtromAI)  
 **Status:** Research Complete - Ready for Implementation
 
 ## Executive Summary

@@ -19,10 +19,14 @@
 .gitignore text eol=lf
 .gitattributes text eol=lf
 
+# Data files
+*.csv text eol=lf
+
 # Binary files
 *.bin binary
 *.uf2 binary
 *.elf binary
+*.dis binary
 *.o binary
 *.a binary
 *.so binary
@@ -30,7 +34,6 @@
 *.jpg binary
 *.jpeg binary
 *.pdf binary
-*.csv binary
 
 # Line ending normalization for platform-specific files
 *.bat text eol=crlf
