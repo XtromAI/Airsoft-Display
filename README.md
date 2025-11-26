@@ -9,7 +9,7 @@ A real-time shot counter and battery monitor for airsoft guns built with the Ras
 
 ## About This Repository
 
-This is an embedded hardware project for use with an F2000 model airsoft rifle. It's a bullpup style, reminiscent of Halo weapons like the BR55 Battle Rifle and MA40 Assault Rifle, both of which have built-in display with ammo counters. The device is unique from others that other makers have built because it is powered by the main airsoft gun LiPo battery through its balance charging port. This is also the basis for the shot counting and battery voltage monitoring features. It samples the battery voltage at 5kHz providing a stream of data to an algorithm that detects when shots are fired based on voltage drops. Overall, it's an efficient design that does not require any external sensors or secondary power supply.
+This is an embedded hardware project for use with an F2000 model airsoft rifle. It's a bullpup style, reminiscent of Halo weapons like the BR55 Battle Rifle and MA40 Assault Rifle, both of which have built-in displays with ammo counters. The device is unique compared to others built by makers because it is powered by the main airsoft gun LiPo battery through its balance charging port. This also forms the basis for the shot counting and battery voltage monitoring features. It samples the battery voltage at 5kHz, providing a stream of data to an algorithm that detects when shots are fired based on voltage drops. Overall, it's an efficient design that does not require any external sensors or a secondary power supply.
 
 \- Xtrom
 
@@ -168,7 +168,7 @@ See [QUICKSTART-DATA-COLLECTION.md](QUICKSTART-DATA-COLLECTION.md) for detailed 
 ADC (5 kHz) → DMA Buffer → Median Filter (5-tap) → Low-Pass Filter (100 Hz) → Shot Detection
 ```
 
-The two-stage filter removes 88% of noise power while maintaining <4ms latency for shot detection.
+The two-stage filter removes 88% of noise power while maintaining less than 4ms latency for shot detection.
 
 See [FILTERING-ANALYSIS-SUMMARY.md](FILTERING-ANALYSIS-SUMMARY.md) for detailed analysis.
 
@@ -216,15 +216,6 @@ cp adc-test.uf2 /media/$USER/RPI-RP2/
 # Open serial terminal at 115200 baud
 ```
 
-## 🤝 Contributing
-
-This is a personal portfolio project, but suggestions and feedback are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
-
-Key areas for contribution:
-- Shot detection algorithm refinement
-- Power consumption optimization
-- Additional display features
-- Documentation improvements
 
 ## 📝 License
 
