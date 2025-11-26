@@ -170,7 +170,7 @@ ADC (5 kHz) → DMA Buffer → Median Filter (5-tap) → Low-Pass Filter (100 Hz
 
 The two-stage filter removes 88% of noise power while maintaining less than 4ms latency for shot detection.
 
-See [FILTERING-ANALYSIS-SUMMARY.md](FILTERING-ANALYSIS-SUMMARY.md) for detailed analysis.
+See [FILTERING-ANALYSIS-SUMMARY.md](docs/devlog/2025-11-14-filtering-analysis-summary.md) for detailed analysis.
 
 ## 📁 Project Structure
 
