@@ -102,7 +102,6 @@ See [docs/hardware/circuit-description.md](docs/hardware/circuit-description.md)
 #### Optional Tools
 - VS Code with Pico extension
 - Serial terminal (for debugging)
-- Logic analyzer (for development)
 
 ### Building the Project
 
