@@ -15,11 +15,39 @@ This is an embedded hardware project for use with an F2000 model airsoft rifle. 
 
 ## Photos
 
-<p align="center">
-    <img src="docs/images/ma40.jpg" alt="MA40 Airsoft Rifle" width="32%" style="display:inline-block; margin-right:1%;">
-    <img src="docs/images/f2000.jpg" alt="F2000 Airsoft Rifle" width="32%" style="display:inline-block; margin-right:1%;">
-    <img src="docs/images/display.jpg" alt="OLED Display Module" width="32%" style="display:inline-block;">
-</p>
+<table>
+  <tr>
+    <td align="center">
+      <span style="font-size:2em; font-weight:bold;">Inspiration</span><br>(Halo)
+    </td>
+    <td align="center" style="font-size: 2em;">&rarr;</td>
+    <td align="center">
+      <span style="font-size:2em; font-weight:bold;">Project</span><br>(Real)
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="assets/ma40-rifle.jpg" width="400"/><br>
+      <b>Halo MA40 Assault Rifle</b>
+    </td>
+    <td align="center" style="font-size: 2em;">&rarr;</td>
+    <td align="center">
+      <img src="assets/f2k-rifle.jpg" width="400"/><br>
+      <b>F2000 Airsoft Rifle</b>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="assets/ma40-display.jpg" width="400"/><br>
+      <b>MA40 Display</b>
+    </td>
+    <td align="center" style="font-size: 2em;">&rarr;</td>
+    <td align="center">
+      <img src="assets/f2k-display.jpg" width="400"/><br>
+      <b>F2000 Display (WIP)</b>
+    </td>
+  </tr>
+</table>
 
 ## 🎯 Features
 
