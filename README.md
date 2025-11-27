@@ -13,8 +13,6 @@ This is an embedded hardware project for use with an F2000 model airsoft rifle. 
 
 \- Xtrom
 
-## Photos
-
 <table>
   <tr>
     <td align="center">
