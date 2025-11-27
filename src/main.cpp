@@ -38,9 +38,6 @@ static constexpr float ADC_TO_VOLTAGE_SCALE = (ADCConfig::ADC_VREF * 1000.0f * A
 // Status LED (onboard)
 #define PIN_STATUS_LED  25  // GP25 (onboard LED)
 
-// Debug pin driven high to feed known 3.3V to ADC when jumpered
-#define PIN_ADC_TEST_VREF 18  // GP18 provides logic HIGH reference
-
 // --- Shared data structure ---
 typedef struct {
     float current_voltage_mv;
@@ -51,7 +48,6 @@ typedef struct {
     float raw_adc_voltage_mv;
     uint16_t raw_min_adc;
     uint16_t raw_max_adc;
-    uint8_t test_pin_level;
     bool data_updated;
     // Live core metrics
     uint32_t core1_uptime_ms;
@@ -160,7 +156,6 @@ void display_main() {
                 local_data.raw_adc_voltage_mv = g_shared_data.raw_adc_voltage_mv;
                 local_data.raw_min_adc = g_shared_data.raw_min_adc;
                 local_data.raw_max_adc = g_shared_data.raw_max_adc;
-                local_data.test_pin_level = g_shared_data.test_pin_level;
                 local_data.data_updated = g_shared_data.data_updated;
                 local_data.core1_uptime_ms = g_shared_data.core1_uptime_ms;
                 local_data.core1_loop_hz = g_shared_data.core1_loop_hz;
@@ -230,10 +225,6 @@ void display_main() {
         display.drawString(0, y, metric_str);
         y += row_height;
 
-    snprintf(metric_str, sizeof(metric_str), "PIN18:%d", local_data.test_pin_level);
-    display.drawString(0, y, metric_str);
-    y += row_height;
-
         snprintf(metric_str, sizeof(metric_str), "SHT: %lu", local_data.shot_count);
         display.drawString(0, y, metric_str);
 
@@ -270,19 +261,6 @@ int main() {
     
     // Initialize mutex
     mutex_init(&g_data_mutex);
-    
-    // Drive reference pin high for manual ADC testing before launching other cores
-    gpio_init(PIN_ADC_TEST_VREF);
-    gpio_set_function(PIN_ADC_TEST_VREF, GPIO_FUNC_SIO);
-    gpio_disable_pulls(PIN_ADC_TEST_VREF);
-    gpio_set_dir(PIN_ADC_TEST_VREF, GPIO_OUT);
-    gpio_put(PIN_ADC_TEST_VREF, 1);
-    gpio_set_drive_strength(PIN_ADC_TEST_VREF, GPIO_DRIVE_STRENGTH_12MA);
-    printf("GP18 configured: func=%d out_en=%d out_lvl=%d in_lvl=%d\n",
-        gpio_get_function(PIN_ADC_TEST_VREF),
-        gpio_is_dir_out(PIN_ADC_TEST_VREF),
-        gpio_get_out_level(PIN_ADC_TEST_VREF),
-        gpio_get(PIN_ADC_TEST_VREF));
 
     // Prepare current core to participate in lockouts when necessary
     multicore_lockout_victim_init();
@@ -481,7 +459,6 @@ int main() {
             g_shared_data.raw_adc_voltage_mv = last_raw_adc_mv;
             g_shared_data.raw_min_adc = last_raw_min;
             g_shared_data.raw_max_adc = last_raw_max;
-            g_shared_data.test_pin_level = gpio_get(PIN_ADC_TEST_VREF);
             g_shared_data.data_updated = true;
             
             // Reset accumulators after updating shared data

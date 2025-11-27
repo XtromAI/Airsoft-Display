@@ -2,6 +2,21 @@
 """
 Analyze voltage data samples collected from the Pico ADC.
 Performs statistical analysis and frequency domain analysis to identify noise characteristics.
+
+---
+Project Context:
+    This script is a core analysis tool for the Airsoft Display project (RP2040/Pico ADC data).
+    It provides statistical analysis, FFT spectrum, autocorrelation, and visualization plots for CSV data captured from the device.
+    Used for noise characterization, filter validation, and system debugging.
+
+Devlog References:
+    - See docs/devlog/2025-11-14-filtering-analysis-summary.md for usage and rationale
+    - Referenced in filter design and recommendations (see also 2025-11-14-filtering-analysis-recommendations.md)
+    - Example usage:
+            python tools/analyze_samples.py tools/data/capture_*.csv
+
+This script is maintained as part of the standard analysis toolkit for reproducible research and filter validation.
+---
 """
 
 import numpy as np

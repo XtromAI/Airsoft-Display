@@ -1,6 +1,21 @@
 #!/usr/bin/env python3
 """
 Detailed low-frequency analysis with detrending and filtering recommendations
+
+---
+Project Context:
+    This script is a core analysis tool for the Airsoft Display project (RP2040/Pico ADC data).
+    It focuses on time-domain detrending, low-frequency isolation, baseline drift analysis, and demonstrates high-pass/low-pass filtering on CSV data from the device.
+    Used for diagnosing slow drifts, baseline wander, and validating filter design.
+
+Devlog References:
+    - See docs/devlog/2025-11-21-filtered-data-analysis.md for usage and rationale
+    - Referenced in filter design and validation workflows (see also 2025-11-14-filtering-analysis-summary.md)
+    - Example usage:
+            python tools/analyze_low_frequency.py tools/data/capture_slot0.csv
+
+This script is maintained as part of the standard analysis toolkit for reproducible research and filter validation.
+---
 """
 
 import sys

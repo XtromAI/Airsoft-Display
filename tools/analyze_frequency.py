@@ -2,6 +2,21 @@
 """
 Analyze frequency components in captured data
 Identifies low-frequency oscillations and noise characteristics
+
+---
+Project Context:
+    This script is a core analysis tool for the Airsoft Display project (RP2040/Pico ADC data).
+    It performs FFT analysis, power spectral density, frequency band power distribution, and dominant frequency identification on CSV data captured from the device.
+    Used for ongoing filter design, noise characterization, and system validation.
+
+Devlog References:
+    - See docs/devlog/2025-11-21-filtered-data-analysis.md for usage and rationale
+    - Referenced in filter design and validation workflows (see also 2025-11-14-filtering-analysis-summary.md)
+    - Example usage:
+            python tools/analyze_frequency.py tools/data/capture_slot0.csv
+
+This script is maintained as part of the standard analysis toolkit for reproducible research and filter validation.
+---
 """
 
 import sys
