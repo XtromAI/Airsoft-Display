@@ -110,15 +110,19 @@ See [docs/hardware/circuit-description.md](docs/hardware/circuit-description.md)
 git clone https://github.com/XtromAI/airsoft-display.git
 cd airsoft-display
 
-# Build with CMake
-mkdir build
-cd build
-cmake ..
-make -j4
+# Configure with CMake + Ninja (preferred workflow)
+cmake -S . -B build -G Ninja -DPICO_SDK_PATH="/path/to/pico-sdk"
+
+# Compile
+ninja -C build
 
 # Flash to Pico (hold BOOTSEL button, connect USB)
-cp airsoft-display.uf2 /media/$USER/RPI-RP2/
+cp build/airsoft-display.uf2 /media/$USER/RPI-RP2/
 ```
+
+**VS Code flow:** use the "Compile Project" task (Ctrl+Shift+B) to invoke Ninja and the "Flash" task to push firmware via the Pico extension. This matches the automated tasks in `.vscode/tasks.json` and keeps the SDK/toolchain paths consistent.
+
+**Alternative (Unix Makefiles):** If Ninja is unavailable, replace the configure/build steps with `cmake -S . -B build` followed by `cmake --build build -- -j4`.
 
 ### Development with VS Code
 
@@ -143,7 +147,7 @@ python tools/download_data.py /dev/ttyACM0 collect 10
 python tools/parse_capture.py capture_00000.bin
 ```
 
-See [QUICKSTART-DATA-COLLECTION.md](docs/devlog/2025-11-06-quickstart-data-collection) for detailed instructions.
+See [QUICKSTART-DATA-COLLECTION.md](docs/devlog/2025-11-06-quickstart-data-collection.md) for detailed instructions.
 
 
 ## 🏗️ Architecture

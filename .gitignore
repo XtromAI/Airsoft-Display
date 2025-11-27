@@ -6,3 +6,10 @@ build
 venv/
 __pycache__/
 *.pyc
+
+# Vendor datasheets and reference binaries are stored locally only
+docs/hardware/datasheets/*
+!docs/hardware/datasheets/README.md
+
+# temp folder for work-in-progress that should not be committed
+temp/
