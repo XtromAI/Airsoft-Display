@@ -143,6 +143,9 @@ python tools/download_data.py /dev/ttyACM0 collect 10
 python tools/parse_capture.py capture_00000.bin
 ```
 
+See [QUICKSTART-DATA-COLLECTION.md](docs/devlog/2025-11-06-quickstart-data-collection) for detailed instructions.
+
+
 ## 🏗️ Architecture
 
 ### Dual-Core Design
@@ -195,7 +198,6 @@ airsoft-display/
 ## 📖 Documentation
 
 - [Project Status](docs/devlog/2025-10-31-PROJECT-STATUS.md) - Current implementation status
-- [Reconnection Guide](docs/devlog/2025-10-31-RECONNECTION-GUIDE.md) - Quick overview for returning contributors
 - [Hardware Documentation](docs/hardware/) - Schematics and component datasheets
 - [Display Driver API](lib/sh1107-pico/docs/) - Custom driver documentation
 - [Copilot Instructions](.github/copilot-instructions.md) - Development conventions
@@ -203,15 +205,6 @@ airsoft-display/
 ## 🧪 Testing
 
 The project uses hardware-in-the-loop testing:
-
-```bash
-# Build ADC test firmware
-make adc-test
-
-# Flash and monitor
-cp adc-test.uf2 /media/$USER/RPI-RP2/
-# Open serial terminal at 115200 baud
-```
 
 
 ## 📝 License
@@ -238,7 +231,6 @@ See the [LICENSE](LICENSE) file for full details.
 
 - **Display Driver:** Inspired by the MicroPython SH1107 driver by peter-l5 https://github.com/peter-l5/SH1107
 - **RP2040 Community:** Excellent documentation and examples from Raspberry Pi Foundation
-- **Airsoft Community:** For real-world testing and feedback
 
 ## 📬 Contact
 
@@ -269,4 +261,4 @@ See the [LICENSE](LICENSE) file for full details.
 
 ---
 
-**Note:** This project is currently work-in-progress. The hardware setup works, and data collection is functional, but shot detection is still in development.
+
