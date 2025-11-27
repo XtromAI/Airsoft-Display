@@ -20,6 +20,7 @@
 #include "flash_storage.h"
 #include "data_collector.h"
 #include "serial_commands.h"
+#include <new>
 
 // Pre-computed constants for ADC conversion (optimization for ARM Cortex-M0+)
 static constexpr float ADC_TO_VOLTAGE_SCALE = (ADCConfig::ADC_VREF * 1000.0f * ADCConfig::VDIV_RATIO * ADCConfig::ADC_CALIBRATION) / (1 << ADCConfig::ADC_BITS);
@@ -37,9 +38,6 @@ static constexpr float ADC_TO_VOLTAGE_SCALE = (ADCConfig::ADC_VREF * 1000.0f * A
 // Status LED (onboard)
 #define PIN_STATUS_LED  25  // GP25 (onboard LED)
 
-// Debug pin driven high to feed known 3.3V to ADC when jumpered
-#define PIN_ADC_TEST_VREF 18  // GP18 provides logic HIGH reference
-
 // --- Shared data structure ---
 typedef struct {
     float current_voltage_mv;
@@ -50,7 +48,6 @@ typedef struct {
     float raw_adc_voltage_mv;
     uint16_t raw_min_adc;
     uint16_t raw_max_adc;
-    uint8_t test_pin_level;
     bool data_updated;
     // Live core metrics
     uint32_t core1_uptime_ms;
@@ -159,7 +156,6 @@ void display_main() {
                 local_data.raw_adc_voltage_mv = g_shared_data.raw_adc_voltage_mv;
                 local_data.raw_min_adc = g_shared_data.raw_min_adc;
                 local_data.raw_max_adc = g_shared_data.raw_max_adc;
-                local_data.test_pin_level = g_shared_data.test_pin_level;
                 local_data.data_updated = g_shared_data.data_updated;
                 local_data.core1_uptime_ms = g_shared_data.core1_uptime_ms;
                 local_data.core1_loop_hz = g_shared_data.core1_loop_hz;
@@ -229,10 +225,6 @@ void display_main() {
         display.drawString(0, y, metric_str);
         y += row_height;
 
-    snprintf(metric_str, sizeof(metric_str), "PIN18:%d", local_data.test_pin_level);
-    display.drawString(0, y, metric_str);
-    y += row_height;
-
         snprintf(metric_str, sizeof(metric_str), "SHT: %lu", local_data.shot_count);
         display.drawString(0, y, metric_str);
 
@@ -269,19 +261,6 @@ int main() {
     
     // Initialize mutex
     mutex_init(&g_data_mutex);
-    
-    // Drive reference pin high for manual ADC testing before launching other cores
-    gpio_init(PIN_ADC_TEST_VREF);
-    gpio_set_function(PIN_ADC_TEST_VREF, GPIO_FUNC_SIO);
-    gpio_disable_pulls(PIN_ADC_TEST_VREF);
-    gpio_set_dir(PIN_ADC_TEST_VREF, GPIO_OUT);
-    gpio_put(PIN_ADC_TEST_VREF, 1);
-    gpio_set_drive_strength(PIN_ADC_TEST_VREF, GPIO_DRIVE_STRENGTH_12MA);
-    printf("GP18 configured: func=%d out_en=%d out_lvl=%d in_lvl=%d\n",
-        gpio_get_function(PIN_ADC_TEST_VREF),
-        gpio_is_dir_out(PIN_ADC_TEST_VREF),
-        gpio_get_out_level(PIN_ADC_TEST_VREF),
-        gpio_get(PIN_ADC_TEST_VREF));
 
     // Prepare current core to participate in lockouts when necessary
     multicore_lockout_victim_init();
@@ -349,6 +328,12 @@ int main() {
                 uint32_t raw_sum = 0;
                 uint16_t raw_min = 0xFFFF;
                 uint16_t raw_max = 0;
+                
+                // Temporary buffer for filtered samples (only allocated if collecting)
+                uint16_t* filtered_buffer = nullptr;
+                if (g_data_collector.is_collecting()) {
+                    filtered_buffer = new (std::nothrow) uint16_t[buffer_size];
+                }
 
                 // Process all samples in the buffer through the filter chain
                 for (uint32_t i = 0; i < buffer_size; ++i) {
@@ -360,6 +345,15 @@ int main() {
                     // Filter the raw ADC sample
                     float filtered_adc = voltage_filter.process(sample);
                     last_filtered_value = filtered_adc;
+                    
+                    // Store filtered sample for data collection (scaled back to uint16_t)
+                    if (filtered_buffer != nullptr) {
+                        // Clamp to 12-bit range and round
+                        float clamped = (filtered_adc < 0.0f) ? 0.0f : 
+                                       (filtered_adc > ADCConfig::ADC_MAX) ? static_cast<float>(ADCConfig::ADC_MAX) : 
+                                       filtered_adc;
+                        filtered_buffer[i] = static_cast<uint16_t>(clamped + 0.5f);
+                    }
                     
                     // Convert to voltage (millivolts) using pre-computed combined scale factor
                     float voltage_mv = filtered_adc * ADC_TO_VOLTAGE_SCALE;
@@ -377,9 +371,14 @@ int main() {
                 last_raw_max = raw_max;
                 last_raw_adc_mv = (buffer_avg / static_cast<float>(ADCConfig::ADC_MAX)) * ADCConfig::ADC_VREF * ADCConfig::ADC_CALIBRATION * 1000.0f;
                 
-                // If collecting data, feed buffer to collector
+                // If collecting data, feed buffers to collector
                 if (g_data_collector.is_collecting()) {
-                    g_data_collector.process_buffer(buffer, buffer_size);
+                    g_data_collector.process_buffer(buffer, filtered_buffer, buffer_size);
+                }
+                
+                // Clean up temporary filtered buffer
+                if (filtered_buffer != nullptr) {
+                    delete[] filtered_buffer;
                 }
                 
                 // Release the buffer back to DMA
@@ -460,7 +459,6 @@ int main() {
             g_shared_data.raw_adc_voltage_mv = last_raw_adc_mv;
             g_shared_data.raw_min_adc = last_raw_min;
             g_shared_data.raw_max_adc = last_raw_max;
-            g_shared_data.test_pin_level = gpio_get(PIN_ADC_TEST_VREF);
             g_shared_data.data_updated = true;
             
             // Reset accumulators after updating shared data

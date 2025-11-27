@@ -1,0 +1,47 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# Source code
+*.cpp text eol=lf
+*.h text eol=lf
+*.c text eol=lf
+*.cmake text eol=lf
+*.py text eol=lf
+
+# Documentation
+*.md text eol=lf
+*.txt text eol=lf
+
+# Configuration files
+*.json text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+.gitignore text eol=lf
+.gitattributes text eol=lf
+
+# Data files
+*.csv text eol=lf
+
+# Binary files
+*.bin binary
+*.uf2 binary
+*.elf binary
+*.dis binary
+*.o binary
+*.a binary
+*.so binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.pdf binary
+
+# Line ending normalization for platform-specific files
+*.bat text eol=crlf
+*.sh text eol=lf
+
+# Linguist overrides for better language detection
+*.cpp linguist-language=C++
+*.h linguist-language=C++
+docs/** linguist-documentation
+tools/** linguist-vendored=false
+lib/u8g2/** linguist-vendored
