@@ -31,6 +31,8 @@ This is a Raspberry Pi Pico (RP2040) embedded C++ project that implements a shot
 
 ### Hardware Components
 
+> ⚠️ **Circuit Update Note:** The hardware components below may be outdated. The circuit has been updated with input protection (PPTC fuse, reverse polarity Schottky diode), improved voltage regulation (MP1584 Buck Module recommended for final builds, LM7805 for prototyping only), and buffered signal conditioning (MCP6002 op-amp). The voltage divider now uses 3.3kΩ/1kΩ resistors for a scaling factor of ~0.233 (4.3:1 division ratio). See [docs/hardware/circuit-description.md](docs/hardware/circuit-description.md) for the current circuit design.
+
 - **Microcontroller:** Raspberry Pi Pico (RP2040)
 - **Display:** SH1107 128x128 OLED (SPI mode, 3.3V)
 - **Battery:** Airsoft gun battery (11.1V 3S LiPo)
