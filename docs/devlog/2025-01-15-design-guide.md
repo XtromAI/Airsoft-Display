@@ -36,7 +36,12 @@ This project implements a shot counter and battery monitor for an Airsoft gun us
   - **Input Voltage:** Powered by the 11.1V 3S LiPo battery (nominal 11.1V).
   - *Note: Due to the voltage drop (e.g., from 11.1V to 5V), the regulator will dissipate heat. A heatsink is recommended to ensure stable operation and prevent thermal shutdown, especially under load.*
 
+> ⚠️ **Circuit Update Note:** The voltage regulator section above is outdated. The current circuit design recommends the MP1584 Buck Module for final builds due to its higher efficiency (up to 96%) compared to the LM7805 linear regulator (40-60% efficiency). The LM7805 is now only recommended for prototyping. See [circuit-description.md](../hardware/circuit-description.md) for the current design.
+
 - **Voltage Divider:** Two series resistors to scale battery voltage down to Pico's ADC range (max 3.3V).
+
+> ⚠️ **Circuit Update Note:** The voltage divider design has been updated. The current circuit uses R_TOP = 3.3kΩ and R_BOT = 1kΩ for a scaling factor of ~0.23256 (4.3:1 ratio), along with input protection (PPTC fuse, reverse polarity Schottky diode) and a buffered signal conditioning path using an MCP6002 op-amp. See [circuit-description.md](../hardware/circuit-description.md) for the complete design.
+
 - **Inputs:**
   - **Button:** Single physical button connected to a Pico GPIO pin, used for shot counter reset (long press) and potential mode switching in future revisions.
 - **Wiring:** Standard breadboard/PCB, jumper wires, etc. See the detailed Wiring Guide section below for pin assignments and connection details.
@@ -63,6 +68,9 @@ This project implements a shot counter and battery monitor for an Airsoft gun us
 - Ensure the SH1107 display is set to SPI mode and powered by 3.3V.
 - Button: GP9 (output, drives LOW), GP10 (input, pull-up enabled); button press connects GP9 and GP10, causing GP10 to read LOW.
 - Battery voltage divider: Use equal-value resistors (e.g., 10kΩ) for 2:1 division; max input 6.6V battery (3.3V at ADC).
+
+> ⚠️ **Circuit Update Note:** The voltage divider recommendation above is outdated. The current circuit uses 3.3kΩ (R_TOP) and 1kΩ (R_BOT) resistors for a scaling factor of ~0.233 (4.3:1 division ratio), with an MCP6002 op-amp buffer for signal accuracy. See [circuit-description.md](../hardware/circuit-description.md) for details.
+
 - Status LED: Onboard, no external wiring required.
 
 #### Power Supply

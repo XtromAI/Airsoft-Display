@@ -160,6 +160,9 @@ See `docs/archive/` for the original U8g2 research docs - they're preserved as a
 ## Questions to Consider
 
 1. **Voltage divider values?** Design guide mentions equal value resistors (10kΩ) for 2:1 division
+
+> ⚠️ **Circuit Update Note:** This question is answered in the updated circuit design. The current circuit uses 3.3kΩ (R_TOP) and 1kΩ (R_BOT) resistors for a scaling factor of ~0.233 (4.3:1 division ratio), with an MCP6002 op-amp buffer. See [circuit-description.md](../hardware/circuit-description.md) for the complete voltage scaling block design.
+
 2. **Shot detection threshold?** How much voltage dip indicates a shot?
 3. **Sample rate?** 1kHz might be too slow for detecting very short dips
 4. **Battery type?** 11.1V 3S LiPo affects voltage scaling

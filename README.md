@@ -68,10 +68,11 @@ This is an embedded hardware project for use with an F2000 model airsoft rifle. 
 ### Components
 - **Microcontroller:** Raspberry Pi Pico (RP2040)
 - **Display:** SH1107 128x128 OLED (SPI mode)
-- **Power:** L7805CV voltage regulator (5V, 1A)
+- **Power:** MP1584 buck module (5V, recommended) or LM7805 linear regulator (prototyping only)
 - **Battery:** 11.1V 3S LiPo (airsoft standard)
-- **Voltage Divider:** 1kΩ and 3kΩ resistors
-- **Signal Buffer:** Opamp buffer for clean signal
+- **Input Protection:** PPTC fuse + Schottky diode (reverse polarity)
+- **Voltage Divider:** 3.3kΩ / 1kΩ resistors (~0.233 scaling factor)
+- **Signal Buffer:** MCP6002 op-amp voltage follower with RC low-pass filter
 
 ### Pin Configuration
 

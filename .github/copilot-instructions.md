@@ -34,9 +34,11 @@ This is a Raspberry Pi Pico (RP2040) embedded C++ project that implements a shot
 - **Microcontroller:** Raspberry Pi Pico (RP2040)
 - **Display:** SH1107 128x128 OLED (SPI mode, 3.3V)
 - **Battery:** Airsoft gun battery (11.1V 3S LiPo)
-- **Voltage Regulator:** L7805CV (5V output, max 1A, input 7.5V-35V)
-- **Voltage Divider:** 10kΩ and 28kΩ resistors (scales down battery voltage to ADC range, max 3.3V)
-- **Power:** USB 5V during development; L7805CV voltage regulator (powered from battery balance connector) when deployed. Typical draw ~50mA (Pico + Display)
+- **Input Protection:** PPTC fuse (overcurrent) + Schottky diode (reverse polarity, ~0.4V drop)
+- **Voltage Regulator:** MP1584 buck module (recommended, up to 96% efficiency) or LM7805 linear regulator (prototyping only, 40-60% efficiency)
+- **Voltage Divider:** 3.3kΩ (R_TOP) and 1kΩ (R_BOT) resistors for a scaling factor of ~0.233 (4.3:1 division ratio)
+- **Signal Buffer:** MCP6002 op-amp (rail-to-rail output) configured as voltage follower with RC low-pass filter (100Ω + 1µF, fc ≈ 1.59kHz)
+- **Power:** USB 5V during development; MP1584 buck module or LM7805 regulator (powered from battery balance connector) when deployed. Typical draw ~50mA (Pico + Display)
 
 ### Dual-Core Architecture
 
